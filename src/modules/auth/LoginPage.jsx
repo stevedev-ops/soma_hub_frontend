@@ -246,6 +246,19 @@ export default function LoginPage({ onClose }) {
                   </div>
                 </button>
               </div>
+
+              {/* Super Admin HQ 1-Click Access */}
+              <div style={{ marginTop: '8px' }}>
+                <button
+                  onClick={() => handleQuickSwitch('admin')}
+                  className="btn-secondary"
+                  style={{ width: '100%', padding: '7px 10px', fontSize: '0.78rem', justifyContent: 'center', gap: '8px', border: '1px solid rgba(139,92,246,0.4)', background: 'rgba(139,92,246,0.1)' }}
+                >
+                  <span>🛡️</span>
+                  <span style={{ fontWeight: 700, color: '#A78BFA' }}>Super Admin HQ</span>
+                  <span style={{ fontSize: '0.66rem', color: 'var(--text-muted)' }}>• Platform Operations &amp; Database</span>
+                </button>
+              </div>
             </div>
 
             <div style={{ position: 'relative', textAlign: 'center', margin: '16px 0' }}>
