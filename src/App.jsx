@@ -31,24 +31,7 @@ function MainApp() {
     if (saved) {
       try { return JSON.parse(saved); } catch (e) {}
     }
-    return [
-      {
-        id: 'liam',
-        name: 'Liam Kariuki',
-        curriculum: 'CBC',
-        grade: 'Grade 4 (CBC)',
-        avatar: 'https://images.unsplash.com/photo-1543332164-6e82f355badc?w=120&auto=format&fit=crop&q=80',
-        dob: '2016-05-14'
-      },
-      {
-        id: 'maya',
-        name: 'Maya Kariuki',
-        curriculum: 'Cambridge',
-        grade: 'Year 5 (Cambridge)',
-        avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=120&auto=format&fit=crop&q=80',
-        dob: '2015-08-22'
-      }
-    ];
+    return [];
   });
 
   useEffect(() => {
