@@ -1,47 +1,20 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
-import { ShieldCheck, TrendingUp, Users, DollarSign, Check, X, Smartphone, UserX, UserCheck, AlertTriangle, Search, Filter, BookOpen, Upload, Download, CheckCircle2, Sparkles, FileCode } from 'lucide-react';
+import { 
+  ShieldCheck, TrendingUp, Users, DollarSign, Check, X, Smartphone, 
+  UserX, UserCheck, AlertTriangle, Search, Filter, BookOpen, Upload, 
+  Download, CheckCircle2, Sparkles, FileCode, Plus 
+} from 'lucide-react';
 
 export default function AdminDashboard() {
   const [tutorApplicants, setTutorApplicants] = useState([]);
-
   const [teachers, setTeachers] = useState([]);
-
   const [teacherFilter, setTeacherFilter] = useState('all'); // all, active, suspended
   const [selectedTeacherForCancel, setSelectedTeacherForCancel] = useState(null);
   const [cancelReasonInput, setCancelReasonInput] = useState('');
 
   // Curriculum Ingestion Engine State
-  const [curriculaCatalog, setCurriculaCatalog] = useState([
-    {
-      code: 'CBC',
-      name: 'Kenya Competency-Based Curriculum (CBC)',
-      tagline: 'KICD approved practical learning for Kenyan homeschoolers',
-      total_weeks: 12,
-      total_lessons: 65,
-      activePackage: 'Grade 4 Term 1 Master Homeschool Box',
-      status: 'Active & Complete'
-    },
-    {
-      code: 'CAMBRIDGE',
-      name: 'Cambridge International Primary (CAIE)',
-      tagline: 'British curriculum Stage 1-6 preparing learners for IGCSE',
-      total_weeks: 12,
-      total_lessons: 60,
-      activePackage: 'Stage 4 Cambridge Primary - Term 1',
-      status: 'Active & Complete'
-    },
-    {
-      code: 'ACE',
-      name: 'Accelerated Christian Education (A.C.E.)',
-      tagline: 'PACE individualized workbook curriculum framework',
-      total_weeks: 0,
-      total_lessons: 0,
-      activePackage: 'PACE 1037-1048 (Grade 4)',
-      status: 'Schema Ready'
-    }
-  ]);
-
+  const [curriculaCatalog, setCurriculaCatalog] = useState([]);
   const [isCurriculumModalOpen, setIsCurriculumModalOpen] = useState(false);
   const [adminSection, setAdminSection] = useState('overview');
   const [builderForm, setBuilderForm] = useState({
@@ -65,6 +38,7 @@ export default function AdminDashboard() {
   const [customJsonInput, setCustomJsonInput] = useState('');
   const [ingestStatus, setIngestStatus] = useState(null);
   const [isIngesting, setIsIngesting] = useState(false);
+  const [transactions, setTransactions] = useState([]);
 
   // Fetch catalog from backend API if available
   const fetchCurriculumCatalog = () => {
@@ -181,19 +155,12 @@ export default function AdminDashboard() {
         setIsCurriculumModalOpen(false);
         setIngestStatus(null);
       }, 2500);
-
     } catch (err) {
       setIngestStatus({ success: false, message: err.message });
     } finally {
       setIsIngesting(false);
     }
   };
-
-  const transactions = [
-    { id: 'TX-9102', phone: '254712***678', item: 'Grade 4 CBC Term 1 Box', amount: 6500, time: '12 mins ago', receipt: 'SKM918274' },
-    { id: 'TX-9101', phone: '254722***432', item: 'Year 5 Cambridge Box', amount: 8500, time: '45 mins ago', receipt: 'SKM918112' },
-    { id: 'TX-9100', phone: '254733***889', item: 'Karura Ecology Walk RSVP', amount: 1200, time: '2 hours ago', receipt: 'SKM917990' }
-  ];
 
   const handleApprove = (id) => {
     const applicant = tutorApplicants.find((a) => a.id === id);
@@ -305,7 +272,7 @@ export default function AdminDashboard() {
       {/* KPI Cards Grid (Overview Tab) */}
       {adminSection === 'overview' && (
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '28px' }}>
-      <div className="glass-panel" style={{ padding: '20px' }}>
+        <div className="glass-panel" style={{ padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700 }}>ACTIVE STUDENTS</span>
             <Users size={18} color="#34D399" />
@@ -344,7 +311,6 @@ export default function AdminDashboard() {
             {teachers.filter((t) => t.status === 'suspended').length} Suspended/Cancelled
           </div>
         </div>
-
       </div>
       )}
 
@@ -391,113 +357,97 @@ export default function AdminDashboard() {
               </tr>
             </thead>
             <tbody>
-              {filteredTeachers.map((teacher) => {
-                const isActive = teacher.status === 'active';
-                return (
-                  <tr key={teacher.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                    {/* Name & Avatar */}
-                    <td style={{ padding: '14px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <img
-                          src={teacher.avatar}
-                          alt={teacher.name}
-                          style={{
-                            width: '42px',
-                            height: '42px',
-                            borderRadius: '50%',
-                            objectFit: 'cover',
-                            border: isActive ? '2px solid #00A651' : '2px solid #EF4444',
-                            filter: isActive ? 'none' : 'grayscale(80%)'
-                          }}
-                        />
-                        <div>
-                          <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{teacher.name}</div>
-                          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{teacher.tsc_number}</div>
+              {filteredTeachers.length === 0 ? (
+                <tr>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
+                    👨‍🏫 No verified teachers registered yet. Teachers who self-register will appear here for TSC vetting and governance.
+                  </td>
+                </tr>
+              ) : (
+                filteredTeachers.map((teacher) => {
+                  const isActive = teacher.status === 'active';
+                  return (
+                    <tr key={teacher.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                      <td style={{ padding: '14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <img
+                            src={teacher.avatar}
+                            alt={teacher.name}
+                            style={{
+                              width: '42px',
+                              height: '42px',
+                              borderRadius: '50%',
+                              objectFit: 'cover',
+                              border: isActive ? '2px solid #00A651' : '2px solid #EF4444',
+                              filter: isActive ? 'none' : 'grayscale(80%)'
+                            }}
+                          />
+                          <div>
+                            <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{teacher.name}</div>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{teacher.tsc_number}</div>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-
-                    {/* Role */}
-                    <td style={{ padding: '14px', color: 'var(--text-secondary)' }}>
-                      {teacher.role}
-                    </td>
-
-                    {/* Estates */}
-                    <td style={{ padding: '14px', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
-                      {teacher.estates}
-                    </td>
-
-                    {/* Rating */}
-                    <td style={{ padding: '14px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 700, color: '#F59E0B' }}>
-                        ★ {teacher.rating}
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 400 }}>
-                          ({teacher.reviewsCount} reviews)
-                        </span>
-                      </div>
-                      <div style={{ fontSize: '0.72rem', color: '#10B981' }}>{teacher.sessionsCompleted} completed sessions</div>
-                    </td>
-
-                    {/* Status Badge */}
-                    <td style={{ padding: '14px' }}>
-                      {isActive ? (
-                        <span className="glass-pill" style={{ background: 'rgba(16,185,129,0.15)', color: '#10B981', border: '1px solid rgba(16,185,129,0.3)', fontSize: '0.72rem' }}>
-                          ✅ Active & Verified
-                        </span>
-                      ) : (
-                        <div>
-                          <span className="glass-pill" style={{ background: 'rgba(239,68,68,0.15)', color: '#F87171', border: '1px solid rgba(239,68,68,0.3)', fontSize: '0.72rem' }}>
-                            🚫 Cancelled / Suspended
+                      </td>
+                      <td style={{ padding: '14px', color: 'var(--text-secondary)' }}>{teacher.role}</td>
+                      <td style={{ padding: '14px', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>{teacher.estates}</td>
+                      <td style={{ padding: '14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 700, color: '#F59E0B' }}>
+                          ★ {teacher.rating}
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 400 }}>
+                            ({teacher.reviewsCount} reviews)
                           </span>
-                          {teacher.cancellationReason && (
-                            <div style={{ fontSize: '0.7rem', color: '#FCA5A5', marginTop: '4px', maxWidth: '200px' }}>
-                              "{teacher.cancellationReason}"
-                            </div>
-                          )}
                         </div>
-                      )}
-                    </td>
-
-                    {/* Actions */}
-                    <td style={{ padding: '14px', textAlign: 'right' }}>
-                      {isActive ? (
-                        <button
-                          onClick={() => {
-                            setSelectedTeacherForCancel(teacher);
-                            setCancelReasonInput('');
-                          }}
-                          className="btn-secondary"
-                          style={{
-                            fontSize: '0.78rem',
-                            color: '#F87171',
-                            borderColor: 'rgba(239,68,68,0.4)',
-                            padding: '6px 12px'
-                          }}
-                          title="Cancel teacher accreditation and suspend booking"
-                        >
-                          <UserX size={14} />
-                          <span>Cancel Teacher</span>
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => handleReactivateTeacher(teacher.id)}
-                          className="btn-primary"
-                          style={{ fontSize: '0.78rem', padding: '6px 12px' }}
-                          title="Reactivate teacher badge"
-                        >
-                          <UserCheck size={14} />
-                          <span>Reactivate Badge</span>
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
+                      </td>
+                      <td style={{ padding: '14px' }}>
+                        {isActive ? (
+                          <span className="glass-pill" style={{ background: 'rgba(16,185,129,0.15)', color: '#10B981', border: '1px solid rgba(16,185,129,0.3)', fontSize: '0.72rem' }}>
+                            ✅ Active & Verified
+                          </span>
+                        ) : (
+                          <div>
+                            <span className="glass-pill" style={{ background: 'rgba(239,68,68,0.15)', color: '#F87171', border: '1px solid rgba(239,68,68,0.3)', fontSize: '0.72rem' }}>
+                              🚫 Cancelled / Suspended
+                            </span>
+                            {teacher.cancellationReason && (
+                              <div style={{ fontSize: '0.7rem', color: '#FCA5A5', marginTop: '4px', maxWidth: '200px' }}>
+                                "{teacher.cancellationReason}"
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </td>
+                      <td style={{ padding: '14px', textAlign: 'right' }}>
+                        {isActive ? (
+                          <button
+                            onClick={() => {
+                              setSelectedTeacherForCancel(teacher);
+                              setCancelReasonInput('');
+                            }}
+                            className="btn-secondary"
+                            style={{ fontSize: '0.78rem', color: '#F87171', borderColor: 'rgba(239,68,68,0.4)', padding: '6px 12px' }}
+                            title="Cancel teacher accreditation"
+                          >
+                            <UserX size={14} />
+                            <span>Cancel Teacher</span>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleReactivateTeacher(teacher.id)}
+                            className="btn-primary"
+                            style={{ fontSize: '0.78rem', padding: '6px 12px' }}
+                            title="Reactivate teacher badge"
+                          >
+                            <UserCheck size={14} />
+                            <span>Reactivate Badge</span>
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
-          <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
-            No live transactions logged yet. Real-time M-Pesa STK push logs will stream here.
-          </div>
         </div>
       </div>
       )}
@@ -511,7 +461,7 @@ export default function AdminDashboard() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <h3 style={{ fontSize: '1.1rem', margin: 0 }}>Tutor Accreditation Queue</h3>
             <span className="glass-pill" style={{ fontSize: '0.72rem', color: '#F59E0B' }}>
-              {tutorApplicants.length} Pending DCI Verification
+              {tutorApplicants.length} Pending Review
             </span>
           </div>
 
@@ -540,7 +490,7 @@ export default function AdminDashboard() {
             ))
           ) : (
             <div style={{ textAlign: 'center', padding: '30px', color: '#10B981', fontSize: '0.9rem' }}>
-              ✓ All tutor background checks are up to date!
+              ✓ All teacher vetting background checks are up to date!
             </div>
           )}
         </div>
@@ -556,29 +506,33 @@ export default function AdminDashboard() {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {transactions.map((t) => (
-              <div key={t.id} style={{
-                background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-subtle)',
-                borderRadius: '10px', padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-              }}>
-                <div>
-                  <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-primary)' }}>{t.item}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    Phone: {t.phone} • Receipt: <strong style={{ color: '#34D399' }}>{t.receipt}</strong>
+            {transactions.length > 0 ? (
+              transactions.map((t) => (
+                <div key={t.id} style={{
+                  background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-subtle)',
+                  borderRadius: '10px', padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                }}>
+                  <div>
+                    <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-primary)' }}>{t.item}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      Phone: {t.phone} • Receipt: <strong style={{ color: '#34D399' }}>{t.receipt}</strong>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#34D399' }}>
+                      +KES {t.amount.toLocaleString()}
+                    </div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{t.time}</div>
                   </div>
                 </div>
-
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#34D399' }}>
-                    +KES {t.amount.toLocaleString()}
-                  </div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{t.time}</div>
-                </div>
+              ))
+            ) : (
+              <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+                No live transactions logged yet. Real-time M-Pesa STK push logs will stream here.
               </div>
-            ))}
+            )}
           </div>
         </div>
-
       </div>
       )}
 
@@ -700,8 +654,8 @@ export default function AdminDashboard() {
                 const next = [entry, ...builderEntries];
                 setBuilderEntries(next);
                 localStorage.setItem('soma_manual_lessons', JSON.stringify(next));
+                setBuilderSuccess(`✓ Added "${builderForm.title}" to ${builderForm.curriculum} Wk ${builderForm.week}!`);
                 setBuilderForm(p => ({ ...p, title: '', strand: '' }));
-                setBuilderSuccess(`✅ Lesson "${entry.title}" added to ${entry.curriculum} Week ${entry.week}!`);
                 setTimeout(() => setBuilderSuccess(''), 3000);
               }} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
@@ -753,7 +707,7 @@ export default function AdminDashboard() {
               </form>
             </div>
 
-            {/* JSON Import (existing engine) */}
+            {/* JSON Import */}
             <div className="glass-panel" style={{ padding: '22px' }}>
               <h4 style={{ fontSize: '0.95rem', margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span>📦</span> JSON Bulk Import
@@ -811,6 +765,117 @@ export default function AdminDashboard() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* JSON CURRICULUM INGESTION MODAL */}
+      {isCurriculumModalOpen && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(5, 10, 8, 0.85)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '20px'
+        }}>
+          <div className="glass-panel" style={{
+            width: '100%',
+            maxWidth: '640px',
+            padding: '28px',
+            borderRadius: '20px',
+            border: '1px solid rgba(0, 166, 81, 0.4)',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)',
+            maxHeight: '90vh',
+            overflowY: 'auto'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <BookOpen size={24} color="#00A651" />
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800 }}>JSON Curriculum Ingestion</h3>
+              </div>
+              <button
+                onClick={() => setIsCurriculumModalOpen(false)}
+                className="btn-secondary"
+                style={{ padding: '6px 10px', fontSize: '0.8rem' }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.86rem', lineHeight: 1.5, marginBottom: '18px' }}>
+              Import official term packages, weekly modules, and daily lesson guides directly into the live Render PostgreSQL database.
+            </p>
+
+            <form onSubmit={handleIngestCurriculum}>
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '6px' }}>
+                  Ingestion Preset / Framework:
+                </label>
+                <select
+                  value={selectedPreset}
+                  onChange={(e) => setSelectedPreset(e.target.value)}
+                  className="custom-select"
+                  style={{ width: '100%', marginBottom: '12px' }}
+                >
+                  <option value="cbc">🇰🇪 KICD CBC Grade 4 (Term 1 - 12 Weeks / 60 Lessons)</option>
+                  <option value="cambridge">🇬🇧 Cambridge Primary Stage 4 (Term 1 - 12 Weeks / 60 Lessons)</option>
+                  <option value="custom">📝 Custom JSON Payload (Paste Schema Below)</option>
+                </select>
+              </div>
+
+              {selectedPreset === 'custom' && (
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '6px' }}>
+                    Custom Curriculum JSON:
+                  </label>
+                  <textarea
+                    rows={8}
+                    value={customJsonInput}
+                    onChange={(e) => setCustomJsonInput(e.target.value)}
+                    placeholder='{ "curriculum": { "code": "ACE", "name": "Accelerated Christian Education" }, "term_package": { ... }, "weeks": [ ... ] }'
+                    className="custom-select"
+                    style={{ width: '100%', fontFamily: 'monospace', fontSize: '0.8rem' }}
+                  />
+                </div>
+              )}
+
+              {ingestStatus && (
+                <div style={{
+                  padding: '12px 14px',
+                  borderRadius: '10px',
+                  marginBottom: '16px',
+                  fontSize: '0.84rem',
+                  background: ingestStatus.success ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                  border: ingestStatus.success ? '1px solid #10B981' : '1px solid #EF4444',
+                  color: ingestStatus.success ? '#10B981' : '#F87171'
+                }}>
+                  {ingestStatus.message}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  type="button"
+                  onClick={() => setIsCurriculumModalOpen(false)}
+                  className="btn-secondary"
+                  style={{ flex: 1, justifyContent: 'center' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isIngesting}
+                  className="btn-primary"
+                  style={{ flex: 1, justifyContent: 'center', opacity: isIngesting ? 0.7 : 1 }}
+                >
+                  {isIngesting ? 'Ingesting to PostgreSQL...' : '🚀 Ingest to Database'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 

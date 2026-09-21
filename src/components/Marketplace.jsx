@@ -1,6 +1,6 @@
 ﻿import React, { useState, useEffect } from 'react';
 import SafetyGuaranteeModal from '../modules/marketplace/SafetyGuaranteeModal';
-import { ShieldCheck, Lock, MapPin, Star, Calendar, Users, Phone, CheckCircle, MessageSquarePlus, Sparkles, Filter, AlertCircle, XCircle, CheckCircle2, Clock, Video } from 'lucide-react';
+import { ShieldCheck, Lock, MapPin, Star, Calendar, Users, Phone, CheckCircle, MessageSquarePlus, Sparkles, Filter, AlertCircle, XCircle, CheckCircle2, Clock, Video, Plus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import BookingModal from '../modules/marketplace/BookingModal';
 import { jobVacanciesService } from '../services/jobVacanciesStore';
