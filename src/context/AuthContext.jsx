@@ -1,4 +1,4 @@
-﻿import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { api } from '../services/api';
 
 const AuthContext = createContext(null);
@@ -9,20 +9,8 @@ export function AuthProvider({ children }) {
     if (saved) {
       try { return JSON.parse(saved); } catch (e) {}
     }
-    return {
-      id: 1,
-      username: 'steve_parent',
-      name: 'Steve Kariuki (Mama Liam)',
-      role: 'parent',
-      phone_number: '+254712345678',
-      estate: 'Kilimani, Nairobi',
-      bio: 'Homeschooling dad supporting Liam in Grade 4 CBC and Maya in Year 5 Cambridge.',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
-      children: [
-        { id: 1, name: 'Liam Kariuki', grade: 'Grade 4', curriculum: 'CBC' },
-        { id: 2, name: 'Maya Kariuki', grade: 'Year 5', curriculum: 'CAMBRIDGE' }
-      ]
-    };
+    // Default to null so new users land on Login & Self-Registration screen
+    return null;
   });
 
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -60,14 +48,15 @@ export function AuthProvider({ children }) {
 
   const logout = () => {
     setCurrentUser(null);
-    setIsLoginModalOpen(true);
+    localStorage.removeItem('somahome_user');
+    setIsLoginModalOpen(false);
   };
 
   return (
     <AuthContext.Provider value={{
       currentUser,
-    user: currentUser,
-    loginWithCredentials,
+      user: currentUser,
+      loginWithCredentials,
       switchAccount,
       updateProfile,
       logout,

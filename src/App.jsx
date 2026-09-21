@@ -135,6 +135,24 @@ function MainApp() {
     setActiveTab('daily');
   };
 
+  // Unauthenticated Gate: Open directly on the Login & Registration screen
+  if (!currentUser) {
+    return (
+      <div style={{ minHeight: '100vh', background: 'var(--bg-app)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <LoginPage />
+        {previewTemplateId && (
+          <PublicCurriculumPreviewModal
+            templateId={previewTemplateId}
+            isOpen={!!previewTemplateId}
+            onClose={() => setPreviewTemplateId(null)}
+            onTemplateApplied={handleTemplateApplied}
+            childrenList={childrenList}
+          />
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="app-layout">
       {/* Modular Dynamic Sidebar */}
