@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
-import { Lock, Smartphone, UserCheck, Users, ShieldCheck, X, Sparkles, GraduationCap, UserPlus, LogIn, CheckCircle } from 'lucide-react';
+import { 
+  Lock, Smartphone, UserCheck, Users, ShieldCheck, X, Sparkles, 
+  GraduationCap, UserPlus, LogIn, CheckCircle, KeyRound, ArrowRight, ArrowLeft 
+} from 'lucide-react';
 
 export default function LoginPage({ onClose }) {
-  const { loginWithCredentials } = useAuth();
-  const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
+  const { loginWithCredentials, loginWithStudentPin } = useAuth();
+  const [authMode, setAuthMode] = useState('login'); // 'login' | 'learner_pin' | 'register'
   const [registerRole, setRegisterRole] = useState('parent'); // 'parent' | 'tutor' | 'creator'
 
   // Credentials State
@@ -13,7 +16,12 @@ export default function LoginPage({ onClose }) {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
+
+  // Learner PIN State
+  const [parentLookupQuery, setParentLookupQuery] = useState('');
+  const [lookupResult, setLookupResult] = useState(null); // { parent_name, estate, learners }
+  const [selectedLearner, setSelectedLearner] = useState(null);
+  const [enteredPin, setEnteredPin] = useState('');
 
   // Self-Registration Form State
   const [regForm, setRegForm] = useState({
@@ -21,17 +29,12 @@ export default function LoginPage({ onClose }) {
     phone: '',
     estate: 'Kilimani, Nairobi',
     password: '',
-    // Parent specific
     childName: '',
     childGrade: 'Grade 4 (CBC)',
     childCurriculum: 'CBC',
-    // Tutor specific
     tscNumber: '',
     hourlyRateKes: '1500',
     subjects: 'Mathematics & Science',
-    // Creator specific
-    socialHandle: '',
-    socialPlatform: 'TikTok & Instagram',
     bio: ''
   });
 
@@ -49,13 +52,45 @@ export default function LoginPage({ onClose }) {
     }
   };
 
+  const handleParentLookup = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+    try {
+      const data = await api.lookupLearners(parentLookupQuery);
+      setLookupResult(data);
+      if (data.learners && data.learners.length === 1) {
+        setSelectedLearner(data.learners[0]);
+      }
+    } catch (err) {
+      setError(err?.message || 'No family found for this phone number.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleStudentPinSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedLearner) return;
+    setIsLoading(true);
+    setError('');
+    try {
+      await loginWithStudentPin(selectedLearner.id, enteredPin || '1234');
+      if (onClose) onClose();
+    } catch (err) {
+      setError(err?.message || 'Incorrect PIN code.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSelfRegister = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
     try {
-      const registered = await api.register({
+      await api.register({
         fullName: regForm.fullName,
         phone: regForm.phone,
         estate: regForm.estate,
@@ -68,7 +103,6 @@ export default function LoginPage({ onClose }) {
         bio: regForm.bio
       });
 
-      // Automatically log the newly registered user in
       await loginWithCredentials(regForm.phone || regForm.fullName.toLowerCase().replace(/\s+/g, '_'), regForm.password || 'Pass1234!');
       if (onClose) onClose();
     } catch (err) {
@@ -112,36 +146,51 @@ export default function LoginPage({ onClose }) {
           </p>
         </div>
 
-        {/* TAB SWITCHER: SIGN IN vs CREATE ACCOUNT */}
+        {/* 3-WAY TAB SWITCHER */}
         <div style={{
-          display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', background: 'rgba(255,255,255,0.04)',
+          display: 'grid', gridTemplateColumns: '1fr 1.2fr 1fr', gap: '4px', background: 'rgba(255,255,255,0.04)',
           padding: '4px', borderRadius: '12px', marginBottom: '20px'
         }}>
           <button
             type="button"
             onClick={() => { setAuthMode('login'); setError(''); }}
             style={{
-              padding: '10px', borderRadius: '8px', fontSize: '0.84rem', fontWeight: 800, cursor: 'pointer',
+              padding: '9px 4px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 800, cursor: 'pointer',
               background: authMode === 'login' ? '#00A651' : 'transparent',
               color: authMode === 'login' ? '#FFFFFF' : 'var(--text-muted)',
-              border: 'none', transition: 'all 0.15s ease'
+              border: 'none', transition: 'all 0.15s ease', textAlign: 'center'
             }}
           >
-            <LogIn size={14} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }} />
+            <LogIn size={13} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
             Sign In
           </button>
+
+          <button
+            type="button"
+            onClick={() => { setAuthMode('learner_pin'); setError(''); }}
+            style={{
+              padding: '9px 4px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 800, cursor: 'pointer',
+              background: authMode === 'learner_pin' ? '#38BDF8' : 'transparent',
+              color: authMode === 'learner_pin' ? '#0F172A' : '#38BDF8',
+              border: 'none', transition: 'all 0.15s ease', textAlign: 'center'
+            }}
+          >
+            <KeyRound size={13} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
+            👶 Learner PIN
+          </button>
+
           <button
             type="button"
             onClick={() => { setAuthMode('register'); setError(''); }}
             style={{
-              padding: '10px', borderRadius: '8px', fontSize: '0.84rem', fontWeight: 800, cursor: 'pointer',
+              padding: '9px 4px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 800, cursor: 'pointer',
               background: authMode === 'register' ? '#00A651' : 'transparent',
               color: authMode === 'register' ? '#FFFFFF' : 'var(--text-muted)',
-              border: 'none', transition: 'all 0.15s ease'
+              border: 'none', transition: 'all 0.15s ease', textAlign: 'center'
             }}
           >
-            <UserPlus size={14} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }} />
-            Create Account
+            <UserPlus size={13} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
+            Register
           </button>
         </div>
 
@@ -158,7 +207,7 @@ export default function LoginPage({ onClose }) {
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="e.g. 0712345678 or admin"
+                  placeholder="e.g. 0712345678 or student username"
                   style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-card)', borderRadius: '10px', padding: '10px 14px', color: '#fff', fontSize: '0.9rem' }}
                 />
               </div>
@@ -178,42 +227,168 @@ export default function LoginPage({ onClose }) {
               </div>
 
               {error && (
-                <div style={{ color: '#EF4444', fontSize: '0.78rem', background: 'rgba(239,68,68,0.1)', padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.3)' }}>
-                  ⚠️ {error}
+                <div style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid #EF4444', color: '#F87171', padding: '10px 12px', borderRadius: '8px', fontSize: '0.82rem' }}>
+                  {error}
                 </div>
               )}
 
-              <button type="submit" disabled={isLoading} className="btn-primary" style={{ justifyContent: 'center', marginTop: '6px', padding: '12px', fontSize: '0.92rem' }}>
-                {isLoading ? 'Signing In...' : 'Sign In'}
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="btn-primary"
+                style={{ width: '100%', padding: '12px', justifyContent: 'center', fontSize: '0.95rem', fontWeight: 800, marginTop: '4px' }}
+              >
+                {isLoading ? 'Signing In...' : 'Sign In to SomaHome'}
               </button>
-
-              <div style={{ textAlign: 'center', marginTop: '10px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                Don't have an account yet?{' '}
-                <button
-                  type="button"
-                  onClick={() => { setAuthMode('register'); setError(''); }}
-                  style={{ background: 'none', border: 'none', color: '#34D399', fontWeight: 800, cursor: 'pointer', padding: 0 }}
-                >
-                  Create one here
-                </button>
-              </div>
             </form>
           </div>
         )}
 
-        {/* VIEW 2: SELF-REGISTRATION FORM */}
+        {/* VIEW 2: 👶 LEARNER TABLET / 4-DIGIT PIN LOGIN */}
+        {authMode === 'learner_pin' && (
+          <div>
+            {!lookupResult ? (
+              <form onSubmit={handleParentLookup} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div style={{ background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: '12px', padding: '12px 14px', fontSize: '0.82rem', color: '#38BDF8', lineHeight: 1.4 }}>
+                  📱 <strong>Tablet Learner Login</strong>: Enter your parent's phone number to find your child profile and enter your 4-digit PIN!
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '5px', fontWeight: 600 }}>
+                    Parent Phone Number:
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={parentLookupQuery}
+                    onChange={(e) => setParentLookupQuery(e.target.value)}
+                    placeholder="e.g. 0711223344"
+                    style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-card)', borderRadius: '10px', padding: '10px 14px', color: '#fff', fontSize: '0.95rem' }}
+                  />
+                </div>
+
+                {error && (
+                  <div style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid #EF4444', color: '#F87171', padding: '10px 12px', borderRadius: '8px', fontSize: '0.82rem' }}>
+                    {error}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="btn-primary"
+                  style={{ width: '100%', padding: '12px', justifyContent: 'center', fontSize: '0.95rem', fontWeight: 800, background: '#0284C7' }}
+                >
+                  {isLoading ? 'Searching...' : 'Find My Family Learners 🔍'}
+                </button>
+              </form>
+            ) : (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                  <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)' }}>
+                    🏡 Family: <strong>{lookupResult.parent_name}</strong>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setLookupResult(null); setSelectedLearner(null); }}
+                    style={{ background: 'transparent', border: 'none', color: '#38BDF8', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px' }}
+                  >
+                    <ArrowLeft size={12} />
+                    <span>Change Phone</span>
+                  </button>
+                </div>
+
+                {/* Learner Avatar Selector */}
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '8px', textTransform: 'uppercase' }}>
+                  Tap Your Name:
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px', marginBottom: '16px' }}>
+                  {lookupResult.learners.map((learner) => {
+                    const isSelected = selectedLearner?.id === learner.id;
+                    return (
+                      <div
+                        key={learner.id}
+                        onClick={() => setSelectedLearner(learner)}
+                        style={{
+                          background: isSelected ? 'rgba(56, 189, 248, 0.2)' : 'rgba(255,255,255,0.03)',
+                          border: isSelected ? '2px solid #38BDF8' : '1px solid var(--border-subtle)',
+                          borderRadius: '14px',
+                          padding: '12px',
+                          textAlign: 'center',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        <img
+                          src={learner.avatar}
+                          alt={learner.name}
+                          style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', margin: '0 auto 6px', border: isSelected ? '2px solid #38BDF8' : '2px solid transparent' }}
+                        />
+                        <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#F8FAFC' }}>
+                          {learner.first_name || learner.name}
+                        </div>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                          {learner.grade}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* 4-Digit PIN Input Form */}
+                {selectedLearner && (
+                  <form onSubmit={handleStudentPinSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '5px', fontWeight: 600 }}>
+                        Enter 4-Digit PIN for {selectedLearner.first_name || selectedLearner.name}:
+                      </label>
+                      <input
+                        type="password"
+                        maxLength={6}
+                        required
+                        autoFocus
+                        value={enteredPin}
+                        onChange={(e) => setEnteredPin(e.target.value)}
+                        placeholder="Default PIN: 1234"
+                        style={{ width: '100%', textAlign: 'center', letterSpacing: '8px', fontSize: '1.4rem', fontWeight: 900, background: 'rgba(255,255,255,0.08)', border: '1px solid #38BDF8', borderRadius: '12px', padding: '10px 14px', color: '#fff' }}
+                      />
+                    </div>
+
+                    {error && (
+                      <div style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid #EF4444', color: '#F87171', padding: '10px 12px', borderRadius: '8px', fontSize: '0.82rem' }}>
+                        {error}
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={isLoading}
+                      className="btn-primary"
+                      style={{ width: '100%', padding: '12px', justifyContent: 'center', fontSize: '0.95rem', fontWeight: 800, background: 'linear-gradient(135deg, #0284C7 0%, #00A651 100%)' }}
+                    >
+                      {isLoading ? 'Unlocking Student OS...' : `🚀 Launch ${selectedLearner.first_name || selectedLearner.name}'s Dashboard`}
+                    </button>
+                  </form>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* VIEW 3: SELF-REGISTRATION FORM */}
         {authMode === 'register' && (
           <div>
             <div style={{ marginBottom: '14px' }}>
-              <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: 700 }}>
+              <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: 700, textTransform: 'uppercase' }}>
                 Select Your Role:
-              </div>
+              </label>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
                 {[
-                  { id: 'parent', label: '👨‍👩‍👧 Parent', desc: 'Homeschool My Child' },
-                  { id: 'tutor', label: '👩‍🏫 Teacher', desc: 'Host Pods & Tutor' },
-                  { id: 'creator', label: '🎨 Creator', desc: 'Publish Bio Links' }
-                ].map(r => (
+                  { id: 'parent', label: '🏡 Parent' },
+                  { id: 'tutor', label: '👨‍🏫 Teacher' },
+                  { id: 'creator', label: '🎨 Creator' }
+                ].map((r) => (
                   <button
                     type="button"
                     key={r.id}
@@ -257,7 +432,7 @@ export default function LoginPage({ onClose }) {
                     Kenyan Phone Number:
                   </label>
                   <input
-                    type="text"
+                    type="tel"
                     required
                     placeholder="0712 345 678"
                     value={regForm.phone}
@@ -268,7 +443,7 @@ export default function LoginPage({ onClose }) {
 
                 <div>
                   <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-muted)', marginBottom: '3px' }}>
-                    Estate / Location:
+                    Neighborhood / Estate:
                   </label>
                   <input
                     type="text"
@@ -281,106 +456,80 @@ export default function LoginPage({ onClose }) {
                 </div>
               </div>
 
+              {/* Parent Specific Fields */}
+              {registerRole === 'parent' && (
+                <div style={{ background: 'rgba(0,166,81,0.08)', border: '1px solid rgba(0,166,81,0.25)', borderRadius: '10px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#34D399' }}>
+                    👶 First Learner Profile (You can add more later)
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '2px' }}>Child Full Name:</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Ethan Kariuki"
+                      value={regForm.childName}
+                      onChange={(e) => setRegForm({ ...regForm, childName: e.target.value })}
+                      style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-card)', borderRadius: '6px', padding: '7px 10px', color: '#fff', fontSize: '0.82rem' }}
+                    />
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '2px' }}>Curriculum:</label>
+                      <select
+                        value={regForm.childCurriculum}
+                        onChange={(e) => setRegForm({ ...regForm, childCurriculum: e.target.value })}
+                        className="custom-select"
+                        style={{ width: '100%', padding: '6px 8px', fontSize: '0.78rem' }}
+                      >
+                        <option value="CBC">CBC (Kenya)</option>
+                        <option value="Cambridge">Cambridge Primary</option>
+                        <option value="ACE">A.C.E. Accelerated</option>
+                        <option value="US_COMMON_CORE">US Common Core</option>
+                        <option value="MONTESSORI">Montessori</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '2px' }}>Grade / Stage:</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Grade 4"
+                        value={regForm.childGrade}
+                        onChange={(e) => setRegForm({ ...regForm, childGrade: e.target.value })}
+                        style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-card)', borderRadius: '6px', padding: '7px 10px', color: '#fff', fontSize: '0.82rem' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-muted)', marginBottom: '3px' }}>
-                  Choose Password:
+                  Create Account Password:
                 </label>
                 <input
                   type="password"
                   required
-                  placeholder="••••••••••••"
+                  placeholder="At least 6 characters"
                   value={regForm.password}
                   onChange={(e) => setRegForm({ ...regForm, password: e.target.value })}
                   style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-card)', borderRadius: '8px', padding: '8px 12px', color: '#fff', fontSize: '0.85rem' }}
                 />
               </div>
 
-              {/* PARENT SPECIFIC FIELDS */}
-              {registerRole === 'parent' && (
-                <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-subtle)', borderRadius: '10px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <div style={{ fontSize: '0.7rem', color: '#34D399', fontWeight: 800, textTransform: 'uppercase' }}>
-                    👶 Your Child's Information:
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '8px' }}>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Child's First Name"
-                      value={regForm.childName}
-                      onChange={(e) => setRegForm({ ...regForm, childName: e.target.value })}
-                      style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-card)', borderRadius: '8px', padding: '7px 10px', color: '#fff', fontSize: '0.82rem' }}
-                    />
-                    <select
-                      className="custom-select"
-                      value={regForm.childGrade}
-                      onChange={(e) => setRegForm({ ...regForm, childGrade: e.target.value })}
-                      style={{ width: '100%', fontSize: '0.82rem', padding: '7px' }}
-                    >
-                      <option value="Grade 1 (CBC)">Grade 1 (CBC)</option>
-                      <option value="Grade 2 (CBC)">Grade 2 (CBC)</option>
-                      <option value="Grade 3 (CBC)">Grade 3 (CBC)</option>
-                      <option value="Grade 4 (CBC)">Grade 4 (CBC)</option>
-                      <option value="Grade 5 (CBC)">Grade 5 (CBC)</option>
-                      <option value="Grade 6 (CBC)">Grade 6 (CBC)</option>
-                      <option value="Grade 7 (JSS CBC)">Grade 7 (JSS CBC)</option>
-                      <option value="Year 4 (Cambridge)">Year 4 (Cambridge)</option>
-                      <option value="Year 5 (Cambridge)">Year 5 (Cambridge)</option>
-                      <option value="Year 6 (Cambridge)">Year 6 (Cambridge)</option>
-                    </select>
-                  </div>
-                </div>
-              )}
-
-              {/* TUTOR SPECIFIC FIELDS */}
-              {registerRole === 'tutor' && (
-                <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-subtle)', borderRadius: '10px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <div style={{ fontSize: '0.7rem', color: '#F59E0B', fontWeight: 800, textTransform: 'uppercase' }}>
-                    👩‍🏫 Educator Information:
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                    <input
-                      type="text"
-                      placeholder="TSC Reg No. (Optional)"
-                      value={regForm.tscNumber}
-                      onChange={(e) => setRegForm({ ...regForm, tscNumber: e.target.value })}
-                      style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-card)', borderRadius: '8px', padding: '7px 10px', color: '#fff', fontSize: '0.82rem' }}
-                    />
-                    <input
-                      type="number"
-                      placeholder="Hourly Rate KES (1500)"
-                      value={regForm.hourlyRateKes}
-                      onChange={(e) => setRegForm({ ...regForm, hourlyRateKes: e.target.value })}
-                      style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-card)', borderRadius: '8px', padding: '7px 10px', color: '#fff', fontSize: '0.82rem' }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* CREATOR SPECIFIC FIELDS */}
-              {registerRole === 'creator' && (
-                <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-subtle)', borderRadius: '10px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <div style={{ fontSize: '0.7rem', color: '#F472B6', fontWeight: 800, textTransform: 'uppercase' }}>
-                    🎨 Social Media Handle:
-                  </div>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. @mamateaches_ke"
-                    value={regForm.socialHandle}
-                    onChange={(e) => setRegForm({ ...regForm, socialHandle: e.target.value })}
-                    style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-card)', borderRadius: '8px', padding: '7px 10px', color: '#fff', fontSize: '0.82rem' }}
-                  />
-                </div>
-              )}
-
               {error && (
-                <div style={{ color: '#EF4444', fontSize: '0.78rem', background: 'rgba(239,68,68,0.1)', padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.3)' }}>
-                  ⚠️ {error}
+                <div style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid #EF4444', color: '#F87171', padding: '8px 10px', borderRadius: '8px', fontSize: '0.8rem' }}>
+                  {error}
                 </div>
               )}
 
-              <button type="submit" disabled={isLoading} className="btn-primary" style={{ justifyContent: 'center', marginTop: '4px', padding: '12px', fontSize: '0.92rem' }}>
-                {isLoading ? 'Creating Account...' : '✨ Create Free Account'}
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="btn-primary"
+                style={{ width: '100%', padding: '11px', justifyContent: 'center', fontSize: '0.9rem', fontWeight: 800, marginTop: '4px' }}
+              >
+                {isLoading ? 'Creating Account...' : 'Complete Self-Registration 🚀'}
               </button>
             </form>
           </div>

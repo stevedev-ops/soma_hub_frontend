@@ -3,6 +3,33 @@ const API_BASE = typeof window !== 'undefined' && import.meta.env.VITE_API_URL
   : 'https://soma-hub-backend.onrender.com/api';
 
 export const api = {
+  async lookupLearners(phoneOrUsername) {
+    const res = await fetch(`${API_BASE}/auth/learner-lookup/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: phoneOrUsername })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'No family found for this phone number.');
+    }
+    return await res.json();
+  },
+
+  async studentPinLogin(studentId, pin) {
+    const res = await fetch(`${API_BASE}/auth/student-pin-login/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ studentId, pin })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Incorrect PIN code.');
+    }
+    const data = await res.json();
+    return data.user;
+  },
+
   async addChild(childData) {
     try {
       const res = await fetch(`${API_BASE}/parent/add-child/`, {

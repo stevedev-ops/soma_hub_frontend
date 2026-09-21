@@ -24,6 +24,13 @@ export function AuthProvider({ children }) {
     }
   }, [currentUser]);
 
+    const loginWithStudentPin = async (studentId, pin) => {
+    const studentUser = await api.studentPinLogin(studentId, pin);
+    setCurrentUser(studentUser);
+    setIsLoginModalOpen(false);
+    return studentUser;
+  };
+
   const loginWithCredentials = async (username, password) => {
     const user = await api.login({ username, password });
     setCurrentUser(user);
@@ -57,6 +64,7 @@ export function AuthProvider({ children }) {
       currentUser,
       user: currentUser,
       loginWithCredentials,
+      loginWithStudentPin,
       switchAccount,
       updateProfile,
       logout,
