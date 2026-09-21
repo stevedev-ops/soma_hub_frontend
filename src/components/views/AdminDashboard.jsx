@@ -1,65 +1,11 @@
 ﻿import React, { useState, useEffect } from 'react';
+import { api } from '../../services/api';
 import { ShieldCheck, TrendingUp, Users, DollarSign, Check, X, Smartphone, UserX, UserCheck, AlertTriangle, Search, Filter, BookOpen, Upload, Download, CheckCircle2, Sparkles, FileCode } from 'lucide-react';
 
 export default function AdminDashboard() {
-  const [tutorApplicants, setTutorApplicants] = useState([
-    { id: 101, name: 'Kevin Mutua', subjects: 'CBC Junior Secondary Coding', estate: 'Westlands / Ruaka', dci_cert: 'DCI-GC-2026-9921', status: 'Pending Review' }
-  ]);
+  const [tutorApplicants, setTutorApplicants] = useState([]);
 
-  const [teachers, setTeachers] = useState([
-    {
-      id: 1,
-      name: 'Teacher Mercy Cherono',
-      role: 'Grade 4 CBC Specialist & Curriculum Lead',
-      avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
-      estates: 'Kilimani, Lavington, Kileleshwa',
-      rating: 5.0,
-      reviewsCount: 14,
-      sessionsCompleted: 42,
-      status: 'active', // 'active' | 'suspended'
-      tsc_number: 'TSC-881294',
-      cancellationReason: null
-    },
-    {
-      id: 2,
-      name: 'Brian Kimani',
-      role: 'Robotics & Cambridge Physics Specialist',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-      estates: 'Westlands, Ruaka, Gigiri',
-      rating: 4.8,
-      reviewsCount: 9,
-      sessionsCompleted: 28,
-      status: 'active',
-      tsc_number: 'TSC-772190',
-      cancellationReason: null
-    },
-    {
-      id: 3,
-      name: 'Sarah Mwangi',
-      role: 'Early Years & Phonics Specialist',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-      estates: 'Karen, Langata, Rongai',
-      rating: 4.9,
-      reviewsCount: 11,
-      sessionsCompleted: 35,
-      status: 'active',
-      tsc_number: 'TSC-994120',
-      cancellationReason: null
-    },
-    {
-      id: 4,
-      name: 'Juma Omondi',
-      role: 'Creative Arts & Kiswahili Lugha',
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-      estates: 'Syokimau, South C, Imara Daima',
-      rating: 4.2,
-      reviewsCount: 6,
-      sessionsCompleted: 18,
-      status: 'suspended',
-      tsc_number: 'TSC-661902',
-      cancellationReason: 'Complaints received regarding persistent unpunctuality.'
-    }
-  ]);
+  const [teachers, setTeachers] = useState([]);
 
   const [teacherFilter, setTeacherFilter] = useState('all'); // all, active, suspended
   const [selectedTeacherForCancel, setSelectedTeacherForCancel] = useState(null);
@@ -149,6 +95,23 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     fetchCurriculumCatalog();
+    api.getTutors().then(data => {
+      if (Array.isArray(data) && data.length > 0) {
+        setTeachers(data.map(t => ({
+          id: t.id,
+          name: t.name,
+          role: t.role || 'Specialist Educator',
+          avatar: t.avatar,
+          estates: t.estate || 'Nairobi',
+          rating: t.rating || 5.0,
+          reviewsCount: t.reviews_count || 0,
+          sessionsCompleted: 0,
+          status: 'active',
+          tsc_number: t.tsc_number || 'Pending',
+          cancellationReason: null
+        })));
+      }
+    }).catch(() => null);
   }, []);
 
   const handleIngestCurriculum = async (e) => {
@@ -347,8 +310,8 @@ export default function AdminDashboard() {
             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700 }}>ACTIVE STUDENTS</span>
             <Users size={18} color="#34D399" />
           </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#F8FAFC', marginTop: '6px' }}>184</div>
-          <div style={{ fontSize: '0.75rem', color: '#10B981', marginTop: '4px' }}>+28 families this month</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#F8FAFC', marginTop: '6px' }}>0</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>Awaiting parent registrations</div>
         </div>
 
         <div className="glass-panel" style={{ padding: '20px' }}>
@@ -356,8 +319,8 @@ export default function AdminDashboard() {
             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700 }}>M-PESA VOLUME (TERM 1)</span>
             <DollarSign size={18} color="#F59E0B" />
           </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#F8FAFC', marginTop: '6px' }}>KES 1,196,000</div>
-          <div style={{ fontSize: '0.75rem', color: '#10B981', marginTop: '4px' }}>100% Daraja STK Push</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#F8FAFC', marginTop: '6px' }}>KES 0.00</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>0 Live Daraja Transactions</div>
         </div>
 
         <div className="glass-panel" style={{ padding: '20px' }}>
@@ -365,8 +328,8 @@ export default function AdminDashboard() {
             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700 }}>ESTATE LEARNING PODS</span>
             <TrendingUp size={18} color="#38BDF8" />
           </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#F8FAFC', marginTop: '6px' }}>22 Active</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>Across 8 Nairobi estates</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#F8FAFC', marginTop: '6px' }}>0 Active</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>0 Registered Estate Pods</div>
         </div>
 
         <div className="glass-panel" style={{ padding: '20px' }}>
@@ -532,6 +495,9 @@ export default function AdminDashboard() {
               })}
             </tbody>
           </table>
+          <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+            No live transactions logged yet. Real-time M-Pesa STK push logs will stream here.
+          </div>
         </div>
       </div>
       )}
