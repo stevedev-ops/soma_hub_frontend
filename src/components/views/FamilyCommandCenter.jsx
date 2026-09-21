@@ -270,7 +270,20 @@ export default function FamilyCommandCenter({
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '16px' }}>
-          {homeworkList.map(hw => {
+          {homeworkList.length === 0 ? (
+            <div style={{
+              gridColumn: '1 / -1',
+              background: 'rgba(255, 255, 255, 0.02)',
+              borderRadius: '14px',
+              padding: '28px',
+              textAlign: 'center',
+              border: '1px dashed var(--border-subtle)',
+              color: 'var(--text-muted)',
+              fontSize: '0.85rem'
+            }}>
+              📝 No homework tasks currently assigned. Teachers assign homework after scheduled lesson sessions.
+            </div>
+          ) : homeworkList.map(hw => {
             const isGraded = hw.status === 'graded';
             const isSubmitted = hw.status === 'submitted';
 
@@ -363,7 +376,33 @@ export default function FamilyCommandCenter({
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '24px' }}>
-          {childrenList.map((child) => {
+          {childrenList.length === 0 ? (
+            <div style={{
+              gridColumn: '1 / -1',
+              background: 'rgba(255, 255, 255, 0.02)',
+              borderRadius: '16px',
+              padding: '36px',
+              textAlign: 'center',
+              border: '1px dashed rgba(0,166,81,0.3)',
+              color: 'var(--text-muted)',
+              fontSize: '0.9rem'
+            }}>
+              <p style={{ margin: '0 0 12px 0', fontSize: '1rem', color: '#F8FAFC', fontWeight: 700 }}>
+                👋 Welcome to your Homeschool Command Center!
+              </p>
+              <p style={{ margin: '0 0 18px 0', fontSize: '0.82rem' }}>
+                You haven't enrolled any learners yet. Add your child to start generating customized CBC or Cambridge daily schedules.
+              </p>
+              <button
+                onClick={onOpenAddChild}
+                className="btn-primary"
+                style={{ margin: '0 auto', fontSize: '0.85rem', padding: '9px 18px' }}
+              >
+                <Plus size={14} />
+                <span>+ Enroll Your First Child</span>
+              </button>
+            </div>
+          ) : childrenList.map((child) => {
             const childBookings = activeBookings.filter(b =>
               b.studentName?.toLowerCase().includes(child.name.toLowerCase().split(' ')[0])
             );
