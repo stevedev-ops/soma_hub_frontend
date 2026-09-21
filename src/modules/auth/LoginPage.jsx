@@ -4,7 +4,7 @@ import { api } from '../../services/api';
 import { Lock, Smartphone, UserCheck, Users, ShieldCheck, X, Sparkles, GraduationCap, UserPlus, LogIn, CheckCircle } from 'lucide-react';
 
 export default function LoginPage({ onClose }) {
-  const { loginWithCredentials, switchAccount, updateProfile } = useAuth();
+  const { loginWithCredentials } = useAuth();
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
   const [registerRole, setRegisterRole] = useState('parent'); // 'parent' | 'tutor' | 'creator'
 
@@ -30,9 +30,9 @@ export default function LoginPage({ onClose }) {
     hourlyRateKes: '1500',
     subjects: 'Mathematics & Science',
     // Creator specific
-    socialHandle: '@homeschoolmom_ke',
+    socialHandle: '',
     socialPlatform: 'TikTok & Instagram',
-    bio: 'Homeschool mom sharing daily practical lesson routines.'
+    bio: ''
   });
 
   const handleFormLogin = async (e) => {
@@ -41,8 +41,9 @@ export default function LoginPage({ onClose }) {
     setError('');
     try {
       await loginWithCredentials(username, password);
+      if (onClose) onClose();
     } catch (err) {
-      setError('Invalid credentials. Please try again or use the Instant Demo Switcher.');
+      setError(err?.message || 'Invalid credentials. Please verify your phone/username and password.');
     } finally {
       setIsLoading(false);
     }
@@ -54,8 +55,7 @@ export default function LoginPage({ onClose }) {
     setError('');
 
     try {
-      // Post registration to Django backend REST endpoint
-      await api.register({
+      const registered = await api.register({
         fullName: regForm.fullName,
         phone: regForm.phone,
         estate: regForm.estate,
@@ -67,62 +67,15 @@ export default function LoginPage({ onClose }) {
         hourlyRateKes: regForm.hourlyRateKes,
         bio: regForm.bio
       });
-      const newUser = {
-        id: Date.now(),
-        username: regForm.phone || regForm.fullName.toLowerCase().replace(/\s+/g, '_'),
-        name: regForm.fullName || (registerRole === 'parent' ? 'Homeschool Parent' : registerRole === 'tutor' ? 'Educator' : 'Creator'),
-        role: registerRole,
-        phone_number: regForm.phone || '+254700000000',
-        estate: regForm.estate,
-        bio: regForm.bio,
-        avatar: registerRole === 'tutor' 
-          ? 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150' 
-          : registerRole === 'creator'
-          ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'
-          : 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=150',
-        children: registerRole === 'parent' ? [
-          {
-            id: `child_${Date.now()}`,
-            name: regForm.childName || 'My Child',
-            grade: regForm.childGrade,
-            curriculum: regForm.childCurriculum
-          }
-        ] : []
-      };
 
-      localStorage.setItem('somahome_user', JSON.stringify(newUser));
-      
-      // If parent, also add child to family list
-      if (registerRole === 'parent' && regForm.childName) {
-        try {
-          const existingChildren = JSON.parse(localStorage.getItem('somahome_parent_children_v3') || '[]');
-          existingChildren.unshift({
-            id: `child_${Date.now()}`,
-            name: regForm.childName,
-            grade: regForm.childGrade,
-            curriculum: regForm.childCurriculum,
-            avatar: 'https://images.unsplash.com/photo-1543332164-6e82f355badc?w=120&auto=format&fit=crop&q=80',
-            dob: '2016-05-14'
-          });
-          localStorage.setItem('somahome_parent_children_v3', JSON.stringify(existingChildren));
-        } catch (e) {}
-      }
-
-      setSuccessMsg(`Welcome to SomaHome, ${newUser.name}! Account created.`);
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+      // Automatically log the newly registered user in
+      await loginWithCredentials(regForm.phone || regForm.fullName.toLowerCase().replace(/\s+/g, '_'), regForm.password || 'Pass1234!');
+      if (onClose) onClose();
     } catch (err) {
-      setError('Registration failed. Please try again.');
+      setError(err?.message || 'Registration failed. Please verify your inputs.');
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleQuickSwitch = async (role) => {
-    setIsLoading(true);
-    await switchAccount(role);
-    setIsLoading(false);
   };
 
   return (
@@ -131,7 +84,7 @@ export default function LoginPage({ onClose }) {
       display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '16px'
     }}>
       <div className="glass-panel" style={{
-        maxWidth: '560px', width: '100%', background: '#0F172A', borderRadius: '24px',
+        maxWidth: '520px', width: '100%', background: '#0F172A', borderRadius: '24px',
         border: '1px solid rgba(0,166,81,0.4)', padding: '32px', position: 'relative', boxShadow: '0 25px 60px rgba(0,0,0,0.8)',
         maxHeight: '92vh', overflowY: 'auto'
       }}>
@@ -155,7 +108,7 @@ export default function LoginPage({ onClose }) {
           </div>
           <h2 style={{ fontSize: '1.5rem', margin: 0, fontWeight: 800 }}>SomaHome Kenya</h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', margin: '4px 0 0 0' }}>
-            CBC & Cambridge Turnkey Homeschooling & Micro-Pod Network
+            Turnkey Homeschool-in-a-Box &amp; Micro-Pod Network
           </p>
         </div>
 
@@ -165,142 +118,85 @@ export default function LoginPage({ onClose }) {
           padding: '4px', borderRadius: '12px', marginBottom: '20px'
         }}>
           <button
+            type="button"
             onClick={() => { setAuthMode('login'); setError(''); }}
             style={{
-              padding: '8px', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer',
+              padding: '10px', borderRadius: '8px', fontSize: '0.84rem', fontWeight: 800, cursor: 'pointer',
               background: authMode === 'login' ? '#00A651' : 'transparent',
               color: authMode === 'login' ? '#FFFFFF' : 'var(--text-muted)',
               border: 'none', transition: 'all 0.15s ease'
             }}
           >
-            Sign In to Existing Account
+            <LogIn size={14} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }} />
+            Sign In
           </button>
           <button
+            type="button"
             onClick={() => { setAuthMode('register'); setError(''); }}
             style={{
-              padding: '8px', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer',
+              padding: '10px', borderRadius: '8px', fontSize: '0.84rem', fontWeight: 800, cursor: 'pointer',
               background: authMode === 'register' ? '#00A651' : 'transparent',
               color: authMode === 'register' ? '#FFFFFF' : 'var(--text-muted)',
               border: 'none', transition: 'all 0.15s ease'
             }}
           >
-            ✨ Self-Register (Free Signup)
+            <UserPlus size={14} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }} />
+            Create Account
           </button>
         </div>
 
         {/* VIEW 1: SIGN IN FORM */}
         {authMode === 'login' && (
           <div>
-            {/* QUICK ROLE SWITCHER (ONE-CLICK SWITCHING) */}
-            <div style={{ marginBottom: '20px' }}>
-              <div style={{ fontSize: '0.7rem', color: '#F59E0B', fontWeight: 800, textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.05em' }}>
-                ⚡ Instant Account Switcher (One-Click Demo Roles):
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                <button
-                  onClick={() => handleQuickSwitch('parent')}
-                  className="btn-secondary"
-                  style={{ padding: '8px 10px', fontSize: '0.8rem', justifyContent: 'flex-start' }}
-                >
-                  <span>👨‍👩‍👧</span>
-                  <div style={{ textAlign: 'left' }}>
-                    <div style={{ fontWeight: 700 }}>Parent Account</div>
-                    <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)' }}>Steve (Mama Liam)</div>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => handleQuickSwitch('creator')}
-                  className="btn-secondary"
-                  style={{ padding: '8px 10px', fontSize: '0.8rem', justifyContent: 'flex-start', border: '1px solid rgba(236,72,153,0.4)' }}
-                >
-                  <span>🎨</span>
-                  <div style={{ textAlign: 'left' }}>
-                    <div style={{ fontWeight: 700, color: '#F472B6' }}>Content Creator</div>
-                    <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)' }}>@MamaTeaches (TikTok)</div>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => handleQuickSwitch('tutor')}
-                  className="btn-secondary"
-                  style={{ padding: '8px 10px', fontSize: '0.8rem', justifyContent: 'flex-start' }}
-                >
-                  <span>👩‍🏫</span>
-                  <div style={{ textAlign: 'left' }}>
-                    <div style={{ fontWeight: 700 }}>Facilitator Desk</div>
-                    <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)' }}>Teacher Mercy (TSC)</div>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => handleQuickSwitch('student')}
-                  className="btn-secondary"
-                  style={{ padding: '8px 10px', fontSize: '0.8rem', justifyContent: 'flex-start' }}
-                >
-                  <span>👦</span>
-                  <div style={{ textAlign: 'left' }}>
-                    <div style={{ fontWeight: 700 }}>Student "Kid Mode"</div>
-                    <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)' }}>Liam (Grade 4 CBC)</div>
-                  </div>
-                </button>
-              </div>
-
-              {/* Super Admin HQ 1-Click Access */}
-              <div style={{ marginTop: '8px' }}>
-                <button
-                  onClick={() => handleQuickSwitch('admin')}
-                  className="btn-secondary"
-                  style={{ width: '100%', padding: '7px 10px', fontSize: '0.78rem', justifyContent: 'center', gap: '8px', border: '1px solid rgba(139,92,246,0.4)', background: 'rgba(139,92,246,0.1)' }}
-                >
-                  <span>🛡️</span>
-                  <span style={{ fontWeight: 700, color: '#A78BFA' }}>Super Admin HQ</span>
-                  <span style={{ fontSize: '0.66rem', color: 'var(--text-muted)' }}>• Platform Operations &amp; Database</span>
-                </button>
-              </div>
-            </div>
-
-            <div style={{ position: 'relative', textAlign: 'center', margin: '16px 0' }}>
-              <hr style={{ border: 'none', borderTop: '1px solid var(--border-subtle)' }} />
-              <span style={{ position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%)', background: '#0F172A', padding: '0 10px', fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                or sign in with password
-              </span>
-            </div>
-
-            {/* CREDENTIALS LOGIN FORM */}
-            <form onSubmit={handleFormLogin} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <form onSubmit={handleFormLogin} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-muted)', marginBottom: '3px' }}>
-                  Kenyan Phone or Username:
+                <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '5px', fontWeight: 600 }}>
+                  Phone Number or Username:
                 </label>
                 <input
                   type="text"
+                  required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="e.g. 0712345678 or steve_parent"
-                  style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-card)', borderRadius: '8px', padding: '8px 12px', color: '#fff', fontSize: '0.85rem' }}
+                  placeholder="e.g. 0712345678 or admin"
+                  style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-card)', borderRadius: '10px', padding: '10px 14px', color: '#fff', fontSize: '0.9rem' }}
                 />
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-muted)', marginBottom: '3px' }}>
-                  Password:
+                <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '5px', fontWeight: 600 }}>
+                  Account Password:
                 </label>
                 <input
                   type="password"
+                  required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-card)', borderRadius: '8px', padding: '8px 12px', color: '#fff', fontSize: '0.85rem' }}
+                  placeholder="••••••••••••"
+                  style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-card)', borderRadius: '10px', padding: '10px 14px', color: '#fff', fontSize: '0.9rem' }}
                 />
               </div>
 
-              {error && <div style={{ color: '#EF4444', fontSize: '0.76rem' }}>{error}</div>}
+              {error && (
+                <div style={{ color: '#EF4444', fontSize: '0.78rem', background: 'rgba(239,68,68,0.1)', padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.3)' }}>
+                  ⚠️ {error}
+                </div>
+              )}
 
-              <button type="submit" disabled={isLoading} className="btn-primary" style={{ justifyContent: 'center', marginTop: '4px', padding: '10px' }}>
-                {isLoading ? 'Signing in...' : 'Sign in to Account'}
+              <button type="submit" disabled={isLoading} className="btn-primary" style={{ justifyContent: 'center', marginTop: '6px', padding: '12px', fontSize: '0.92rem' }}>
+                {isLoading ? 'Signing In...' : 'Sign In'}
               </button>
+
+              <div style={{ textAlign: 'center', marginTop: '10px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                Don't have an account yet?{' '}
+                <button
+                  type="button"
+                  onClick={() => { setAuthMode('register'); setError(''); }}
+                  style={{ background: 'none', border: 'none', color: '#34D399', fontWeight: 800, cursor: 'pointer', padding: 0 }}
+                >
+                  Create one here
+                </button>
+              </div>
             </form>
           </div>
         )}
@@ -308,29 +204,33 @@ export default function LoginPage({ onClose }) {
         {/* VIEW 2: SELF-REGISTRATION FORM */}
         {authMode === 'register' && (
           <div>
-            {/* Role Picker */}
             <div style={{ marginBottom: '14px' }}>
-              <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-muted)', marginBottom: '6px' }}>
-                I am registering as a:
-              </label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px' }}>
+              <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: 700 }}>
+                Select Your Role:
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
                 {[
-                  { id: 'parent', label: '👨‍👩‍👧 Parent / Family' },
-                  { id: 'tutor', label: '👩‍🏫 Tutor / Teacher' },
-                  { id: 'creator', label: '🎨 Content Creator' }
-                ].map((r) => (
+                  { id: 'parent', label: '👨‍👩‍👧 Parent', desc: 'Homeschool My Child' },
+                  { id: 'tutor', label: '👩‍🏫 Teacher', desc: 'Host Pods & Tutor' },
+                  { id: 'creator', label: '🎨 Creator', desc: 'Publish Bio Links' }
+                ].map(r => (
                   <button
-                    key={r.id}
                     type="button"
+                    key={r.id}
                     onClick={() => setRegisterRole(r.id)}
                     style={{
-                      padding: '8px 6px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer',
-                      background: registerRole === r.id ? 'rgba(0,166,81,0.2)' : 'rgba(255,255,255,0.03)',
-                      color: registerRole === r.id ? '#34D399' : 'var(--text-muted)',
-                      border: registerRole === r.id ? '1px solid #00A651' : '1px solid var(--border-subtle)'
+                      padding: '8px 4px',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      border: registerRole === r.id ? '2px solid #00A651' : '1px solid var(--border-subtle)',
+                      background: registerRole === r.id ? 'rgba(0,166,81,0.15)' : 'rgba(255,255,255,0.02)',
+                      color: registerRole === r.id ? '#FFFFFF' : 'var(--text-secondary)',
+                      fontSize: '0.78rem',
+                      fontWeight: 800,
+                      textAlign: 'center'
                     }}
                   >
-                    {r.label}
+                    <div>{r.label}</div>
                   </button>
                 ))}
               </div>
@@ -339,12 +239,12 @@ export default function LoginPage({ onClose }) {
             <form onSubmit={handleSelfRegister} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-muted)', marginBottom: '3px' }}>
-                  Full Name / Preferred Name:
+                  Full Name:
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder={registerRole === 'tutor' ? 'e.g. Teacher David Maina' : registerRole === 'creator' ? 'e.g. Mama Liam (@MamaTeachesKenya)' : 'e.g. Sarah Kariuki'}
+                  placeholder={registerRole === 'tutor' ? 'e.g. Teacher David Maina' : registerRole === 'creator' ? 'e.g. Sarah Kariuki' : 'e.g. Grace Wanjiku'}
                   value={regForm.fullName}
                   onChange={(e) => setRegForm({ ...regForm, fullName: e.target.value })}
                   style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-card)', borderRadius: '8px', padding: '8px 12px', color: '#fff', fontSize: '0.85rem' }}
@@ -354,7 +254,7 @@ export default function LoginPage({ onClose }) {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-muted)', marginBottom: '3px' }}>
-                    Kenyan WhatsApp Phone:
+                    Kenyan Phone Number:
                   </label>
                   <input
                     type="text"
@@ -368,12 +268,12 @@ export default function LoginPage({ onClose }) {
 
                 <div>
                   <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-muted)', marginBottom: '3px' }}>
-                    Estate / Neighborhood:
+                    Estate / Location:
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Syokimau / Kilimani"
+                    placeholder="e.g. Kilimani, Nairobi"
                     value={regForm.estate}
                     onChange={(e) => setRegForm({ ...regForm, estate: e.target.value })}
                     style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-card)', borderRadius: '8px', padding: '8px 12px', color: '#fff', fontSize: '0.85rem' }}
@@ -381,17 +281,31 @@ export default function LoginPage({ onClose }) {
                 </div>
               </div>
 
+              <div>
+                <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-muted)', marginBottom: '3px' }}>
+                  Choose Password:
+                </label>
+                <input
+                  type="password"
+                  required
+                  placeholder="••••••••••••"
+                  value={regForm.password}
+                  onChange={(e) => setRegForm({ ...regForm, password: e.target.value })}
+                  style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-card)', borderRadius: '8px', padding: '8px 12px', color: '#fff', fontSize: '0.85rem' }}
+                />
+              </div>
+
               {/* PARENT SPECIFIC FIELDS */}
               {registerRole === 'parent' && (
                 <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-subtle)', borderRadius: '10px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <div style={{ fontSize: '0.7rem', color: '#34D399', fontWeight: 800, textTransform: 'uppercase' }}>
-                    👶 Child Details:
+                    👶 Your Child's Information:
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '8px' }}>
                     <input
                       type="text"
                       required
-                      placeholder="Child's First Name (e.g. Liam)"
+                      placeholder="Child's First Name"
                       value={regForm.childName}
                       onChange={(e) => setRegForm({ ...regForm, childName: e.target.value })}
                       style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-card)', borderRadius: '8px', padding: '7px 10px', color: '#fff', fontSize: '0.82rem' }}
@@ -408,6 +322,7 @@ export default function LoginPage({ onClose }) {
                       <option value="Grade 4 (CBC)">Grade 4 (CBC)</option>
                       <option value="Grade 5 (CBC)">Grade 5 (CBC)</option>
                       <option value="Grade 6 (CBC)">Grade 6 (CBC)</option>
+                      <option value="Grade 7 (JSS CBC)">Grade 7 (JSS CBC)</option>
                       <option value="Year 4 (Cambridge)">Year 4 (Cambridge)</option>
                       <option value="Year 5 (Cambridge)">Year 5 (Cambridge)</option>
                       <option value="Year 6 (Cambridge)">Year 6 (Cambridge)</option>
@@ -420,7 +335,7 @@ export default function LoginPage({ onClose }) {
               {registerRole === 'tutor' && (
                 <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-subtle)', borderRadius: '10px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <div style={{ fontSize: '0.7rem', color: '#F59E0B', fontWeight: 800, textTransform: 'uppercase' }}>
-                    👩‍🏫 Educator Credentials:
+                    👩‍🏫 Educator Information:
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                     <input
@@ -445,11 +360,12 @@ export default function LoginPage({ onClose }) {
               {registerRole === 'creator' && (
                 <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-subtle)', borderRadius: '10px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <div style={{ fontSize: '0.7rem', color: '#F472B6', fontWeight: 800, textTransform: 'uppercase' }}>
-                    🎨 Social Media Handles:
+                    🎨 Social Media Handle:
                   </div>
                   <input
                     type="text"
-                    placeholder="TikTok / Instagram handle (e.g. @mamateaches_ke)"
+                    required
+                    placeholder="e.g. @mamateaches_ke"
                     value={regForm.socialHandle}
                     onChange={(e) => setRegForm({ ...regForm, socialHandle: e.target.value })}
                     style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-card)', borderRadius: '8px', padding: '7px 10px', color: '#fff', fontSize: '0.82rem' }}
@@ -457,14 +373,13 @@ export default function LoginPage({ onClose }) {
                 </div>
               )}
 
-              {successMsg && (
-                <div style={{ color: '#34D399', fontSize: '0.82rem', fontWeight: 800, textAlign: 'center' }}>
-                  ✓ {successMsg}
+              {error && (
+                <div style={{ color: '#EF4444', fontSize: '0.78rem', background: 'rgba(239,68,68,0.1)', padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.3)' }}>
+                  ⚠️ {error}
                 </div>
               )}
-              {error && <div style={{ color: '#EF4444', fontSize: '0.76rem' }}>{error}</div>}
 
-              <button type="submit" disabled={isLoading} className="btn-primary" style={{ justifyContent: 'center', marginTop: '4px', padding: '10px' }}>
+              <button type="submit" disabled={isLoading} className="btn-primary" style={{ justifyContent: 'center', marginTop: '4px', padding: '12px', fontSize: '0.92rem' }}>
                 {isLoading ? 'Creating Account...' : '✨ Create Free Account'}
               </button>
             </form>
