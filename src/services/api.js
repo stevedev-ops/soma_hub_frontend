@@ -3,6 +3,31 @@ const API_BASE = typeof window !== 'undefined' && import.meta.env.VITE_API_URL
   : 'https://soma-hub-backend.onrender.com/api';
 
 export const api = {
+  async addChild(childData) {
+    try {
+      const res = await fetch(`${API_BASE}/parent/add-child/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(childData)
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to add child.');
+      }
+      const data = await res.json();
+      return data.child;
+    } catch (e) {
+      console.warn('Backend addChild error, using local fallback:', e);
+      return {
+        id: childData.name ? childData.name.toLowerCase().replace(/\s+/g, '_') + '_' + Date.now().toString().slice(-4) : `child_${Date.now()}`,
+        name: childData.name,
+        grade: childData.grade || 'Grade 4 (CBC)',
+        curriculum: childData.curriculum || 'CBC',
+        avatar: childData.avatar || 'https://images.unsplash.com/photo-1543332164-6e82f355badc?w=120'
+      };
+    }
+  },
+
   // Authentication & Account Switching (Strict Backend Auth)
   async login({ username, password, demoRole }) {
     const res = await fetch(`${API_BASE}/auth/login/`, {

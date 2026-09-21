@@ -27,6 +27,13 @@ function MainApp() {
 
   // Enrolled children managed in persistent family state
   const [childrenList, setChildrenList] = useState(() => {
+    const savedUser = localStorage.getItem('somahome_user');
+    if (savedUser) {
+      try {
+        const u = JSON.parse(savedUser);
+        if (u?.children && Array.isArray(u.children) && u.children.length > 0) return u.children;
+      } catch (e) {}
+    }
     const saved = localStorage.getItem('somahome_parent_children_v3');
     if (saved) {
       try { return JSON.parse(saved); } catch (e) {}
@@ -34,15 +41,40 @@ function MainApp() {
     return [];
   });
 
+  // Sync children whenever user object changes or logs in
+  useEffect(() => {
+    if (currentUser?.children && Array.isArray(currentUser.children) && currentUser.children.length > 0) {
+      setChildrenList(currentUser.children);
+      setActiveStudent((prev) => {
+        const exists = currentUser.children.find(c => c.id === prev);
+        return exists ? prev : currentUser.children[0].id;
+      });
+    }
+  }, [currentUser]);
+
   useEffect(() => {
     localStorage.setItem('somahome_parent_children_v3', JSON.stringify(childrenList));
   }, [childrenList]);
 
   const [isAddChildModalOpen, setIsAddChildModalOpen] = useState(false);
 
-  const handleAddChild = (newChild) => {
-    setChildrenList((prev) => [...prev, newChild]);
-    setActiveStudent(newChild.id);
+  const handleAddChild = async (newChild) => {
+    try {
+      const savedChild = await api.addChild({
+        parentId: currentUser?.id,
+        phone: currentUser?.phone_number,
+        name: newChild.name,
+        grade: newChild.grade,
+        curriculum: newChild.curriculum,
+        avatar: newChild.avatar
+      });
+      const created = savedChild || newChild;
+      setChildrenList((prev) => [...prev, created]);
+      setActiveStudent(created.id);
+    } catch (e) {
+      setChildrenList((prev) => [...prev, newChild]);
+      setActiveStudent(newChild.id);
+    }
   };
 
   const [packages, setPackages] = useState([]);
