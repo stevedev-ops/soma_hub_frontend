@@ -255,7 +255,7 @@ export default function RevisionTests() {
   const podLeaderboard = [
     { rank: 1, name: 'Syokimau Explorers Pod', region: 'Nairobi East', members: 6, xp: 3450, avatar: '🚀' },
     { rank: 2, name: 'Karen Nature & Agro Pod', region: 'Nairobi West', members: 4, xp: 3120, avatar: '🌿' },
-    { rank: 3, name: 'Liam Kariuki (Your Learner)', region: 'Syokimau Estate', members: 1, xp: userXp, isUser: true, avatar: '👦' },
+    { rank: 3, name: 'Active Learner (You)', region: 'Syokimau Estate', members: 1, xp: userXp, isUser: true, avatar: '👦' },
     { rank: 4, name: 'Kilimani STEM Innovators', region: 'Nairobi Central', members: 5, xp: 2600, avatar: '⚡' },
     { rank: 5, name: 'Mombasa Coast Scholars', region: 'Nyali Coast', members: 4, xp: 2340, avatar: '🌊' }
   ].sort((a, b) => b.xp - a.xp).map((item, idx) => ({ ...item, rank: idx + 1 }));
