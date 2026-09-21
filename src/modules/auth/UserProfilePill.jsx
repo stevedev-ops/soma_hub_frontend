@@ -18,7 +18,7 @@ export default function UserProfilePill() {
   };
 
   const currentRole = roleColors[currentUser.role] || roleColors.parent;
-  const isDualRole = currentUser.role === 'creator' || currentUser.role === 'tutor';
+  const isDualRole = !!currentUser?.is_dual_identity || (!!currentUser?.is_also_teacher && !!currentUser?.is_also_creator);
 
   const handleDualSwitch = () => {
     if (currentUser.role === 'creator') {

@@ -30,7 +30,8 @@ export const api = {
         },
         creator: {
           id: 5, username: 'mamateaches_creator', name: 'Mama Liam (@MamaTeachesKenya)',
-          role: 'creator', phone_number: '+254712345678', estate: 'Kilimani, Nairobi',
+          role: 'creator', is_dual_identity: true, is_also_teacher: true, is_also_creator: true,
+          phone_number: '+254712345678', estate: 'Kilimani, Nairobi',
           avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150'
         },
         student: {

@@ -5,7 +5,7 @@ import ParentModule from './modules/parent/ParentModule';
 import StudentModule from './modules/student/StudentModule';
 import TutorModule from './modules/tutor/TutorModule';
 import AdminModule from './modules/admin/AdminModule';
-import CreatorStudio from './components/views/CreatorStudio';
+import CreatorModule from './modules/creator/CreatorModule';
 import LoginPage from './modules/auth/LoginPage';
 import AddChildModal from './modules/parent/AddChildModal';
 import MpesaModal from './components/MpesaModal';
@@ -208,8 +208,11 @@ function MainApp() {
         )}
 
         {currentUser?.role === 'creator' && (
-          <CreatorStudio
-            onNavigateTab={(tab) => setActiveTab(tab)}
+          <CreatorModule
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            tutors={tutors}
+            pods={pods}
             onSwitchToTeacher={() => switchAccount('tutor')}
           />
         )}
