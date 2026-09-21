@@ -86,8 +86,59 @@ export default function DailyOS({ schedule, onOpenPrintable, onOpenLab }) {
     return `${m}:${s}`;
   };
 
-  const daySchedule = schedule?.days?.find((d) => d.day_of_week === selectedDay) || schedule?.days?.[0];
-  const activeLesson = daySchedule?.lessons?.find((l) => l.id === activeLessonId) || daySchedule?.lessons?.[0];
+  const fallbackLessons = [
+    {
+      id: 1,
+      subject: "Mathematics Activities",
+      time_slot: "08:30 AM - 09:15 AM",
+      duration_minutes: 35,
+      topic: "Fractions: Halves, Quarters & Eighths",
+      parent_script: "Greet your child and say: 'Today we are dividing a delicious chapati among our family members! If we have one whole round chapati and slice it straight down the middle, how many equal slices do we have? That is 1/2.'",
+      learning_objective: "Learners should identify and represent proper fractions using concrete everyday objects.",
+      local_materials: ["Round cardboard or paper plate", "Pair of safety scissors", "Ruler and pencil"],
+      step_by_step_activity: "1. Have child fold plate in half (1/2).\n2. Fold into quarters and label each slice 1/4.\n3. Complete Worksheet #1.",
+      worksheet_name: "Math_G4_W3_Fractions_Plate.pdf",
+      is_lab_practical: false
+    },
+    {
+      id: 3,
+      subject: "Science & Technology (Home Lab)",
+      time_slot: "09:30 AM - 10:30 AM",
+      duration_minutes: 45,
+      topic: "Water Purification with Local Materials",
+      parent_script: "Say: 'When it rains heavily and our rivers turn brown with mud, how can communities make water clear again? Today, you are an environmental engineer! We are going to build our very own filter using things from our kitchen and compound.'",
+      learning_objective: "Construct a working mechanical water filtration apparatus demonstrating how sediment and charcoal filter muddy water.",
+      local_materials: [
+        "1 empty plastic soda bottle (e.g. Dasani or Quencher)",
+        "Charcoal pieces crushed from the jiko",
+        "Clean fine sand from the compound",
+        "Small clean pebbles / gravel",
+        "Cotton wool or a piece of clean cotton cloth",
+        "A cup of muddy/dirty water"
+      ],
+      step_by_step_activity: "1. Cut the bottom third off the bottle.\n2. Invert top neck-down into a glass.\n3. Layer cotton, charcoal from jiko, sand, then pebbles.\n4. Pour muddy water slowly.\n5. Take a photo and upload to portfolio!",
+      worksheet_name: "Science_G4_W3_Water_Filter_Lab.pdf",
+      is_lab_practical: true,
+      has_photo_submission: true
+    },
+    {
+      id: 2,
+      subject: "English Language & Creative Writing",
+      time_slot: "11:00 AM - 11:45 AM",
+      duration_minutes: 40,
+      topic: "Descriptive Writing: My Neighborhood Compound",
+      parent_script: "Ask: 'Look outside our window or compound. What are three colorful things you see and hear? Let us write an imaginative 3-paragraph story about an adventurous bird that visited our balcony today.'",
+      learning_objective: "Write coherent descriptive sentences utilizing sensory adjectives and proper punctuation.",
+      local_materials: ["Lined notebook", "Color pencils or pens"],
+      step_by_step_activity: "1. Brainstorm 5 adjectives.\n2. Write introductory sentence.\n3. Complete drafting prompt.",
+      worksheet_name: "English_G4_W3_Descriptive_Writing.pdf",
+      is_lab_practical: false
+    }
+  ];
+
+  const rawLessons = schedule?.lessons || schedule?.days?.find((d) => d.day_of_week === selectedDay)?.lessons || schedule?.days?.[0]?.lessons || [];
+  const lessonsList = (rawLessons && rawLessons.length > 0) ? rawLessons : fallbackLessons;
+  const activeLesson = lessonsList.find((l) => l.id === activeLessonId) || lessonsList[0];
 
   
   const handleSendToWhatsApp = () => {
@@ -98,7 +149,7 @@ export default function DailyOS({ schedule, onOpenPrintable, onOpenLab }) {
       : '• Standard household writing materials';
 
     const msg = `🇰🇪 *SomaHome Kenya • Homeschool Daily Guide*
-📚 *${schedule.package?.curriculum || 'CBC'} ${schedule.package?.grade_level || 'Grade 4'}* • ${currentDayName}
+📚 *${schedule?.package?.curriculum || 'CBC'} ${schedule?.package?.grade_level || 'Grade 4'}* • ${currentDayName}
 🎯 *Lesson:* ${activeLesson?.subject || 'Mathematics'} - ${activeLesson?.topic || 'Daily Topic'}
 ⏱️ *Time Slot:* ${activeLesson?.time_slot || '08:30 AM'} (${activeLesson?.duration_minutes || 35} mins)
 
@@ -160,13 +211,7 @@ https://somahome.ke/worksheets/printable_pack.pdf`;
     }, 1600);
   };
 
-  if (!schedule || !activeLesson) {
-    return (
-      <div className="glass-panel" style={{ padding: '40px', textAlign: 'center' }}>
-        <p>Loading your customized Homeschool OS daily guide...</p>
-      </div>
-    );
-  }
+  // Fallback safe: activeLesson is always guaranteed by fallbackLessons
 
   const authorityMode = planningAuthority?.authorityMode || 'teacher';
 
@@ -248,7 +293,7 @@ https://somahome.ke/worksheets/printable_pack.pdf`;
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', flexWrap: 'wrap' }}>
             <span className="glass-pill badge-cbc">
-              {schedule.package?.curriculum || 'CBC'} · {schedule.package?.grade_level || 'Grade 4'}
+              {schedule?.package?.curriculum || 'CBC'} · {schedule?.package?.grade_level || 'Grade 4'}
             </span>
             
             {/* Week 1..12 Dropdown Selector (Consolidating TermWeeksNavigator) */}
@@ -279,7 +324,7 @@ https://somahome.ke/worksheets/printable_pack.pdf`;
             </button>
           </div>
           <h2 style={{ margin: 0, fontSize: '1.45rem', fontWeight: 800 }}>
-            {schedule.week?.theme_title || 'Numbers & Living Things'}
+            {schedule?.week?.theme_title || 'Numbers & Living Things'}
           </h2>
         </div>
 
@@ -368,7 +413,7 @@ https://somahome.ke/worksheets/printable_pack.pdf`;
               </button>
             </div>
 
-            {daySchedule?.lessons?.map((l) => {
+            {lessonsList.map((l) => {
               const isSelected = activeLesson.id === l.id;
               const isDone = !!completedLessons[l.id];
 
