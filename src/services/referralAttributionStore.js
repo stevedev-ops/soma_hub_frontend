@@ -53,7 +53,8 @@ export const referralAttributionStore = {
     const attr = referralAttributionStore.getAttribution();
     try {
       // Post to Django REST API
-      fetch('http://localhost:8000/api/creators/affiliates/', {
+      const apiBase = typeof window !== 'undefined' && (import.meta.env.VITE_API_URL || 'https://soma-hub-backend.onrender.com/api');
+      fetch(`${apiBase}/creators/affiliates/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -73,7 +73,7 @@ export default function TermWeeksNavigator({ onSelectWeek }) {
 
           {/* Direct Binary PDF Download button linking to Django backend */}
           <a
-            href="http://localhost:8000/api/curriculum/download-printable-pack/"
+            href={`${import.meta.env.VITE_API_URL || "https://soma-hub-backend.onrender.com/api"}/curriculum/download-printable-pack/`}
             target="_blank"
             rel="noreferrer"
             className="btn-primary"

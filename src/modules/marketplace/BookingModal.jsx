@@ -33,7 +33,8 @@ export default function BookingModal({ tutor, isOpen, onClose, onBookingSuccess 
     setStep('mpesa');
 
     try {
-      await fetch('http://localhost:8000/api/payments/stk-push/', {
+      const apiBase = import.meta.env.VITE_API_URL || 'https://soma-hub-backend.onrender.com/api';
+      await fetch(`${apiBase}/payments/stk-push/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

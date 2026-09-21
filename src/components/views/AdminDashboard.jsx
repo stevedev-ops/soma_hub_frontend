@@ -122,7 +122,7 @@ export default function AdminDashboard() {
 
   // Fetch catalog from backend API if available
   const fetchCurriculumCatalog = () => {
-    fetch('http://localhost:8000/api/curriculum/catalog-summary/')
+    fetch(`${import.meta.env.VITE_API_URL || 'https://soma-hub-backend.onrender.com/api'}/curriculum/catalog-summary/`)
       .then(res => res.json())
       .then(data => {
         if (data && data.curricula) {
@@ -201,7 +201,7 @@ export default function AdminDashboard() {
         payload = JSON.parse(customJsonInput);
       }
 
-      const response = await fetch('http://localhost:8000/api/curriculum/import-json/', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://soma-hub-backend.onrender.com/api'}/curriculum/import-json/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
