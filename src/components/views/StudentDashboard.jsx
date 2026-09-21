@@ -45,11 +45,11 @@ export default function StudentDashboard({ onGoToReading, onGoToQuiz, onGoToChat
   const [activeHwModal, setActiveHwModal] = useState(null);
 
   // Booked sessions for Liam (Live Reactive)
-  const [bookedSessions, setBookedSessions] = useState(() => bookingsService.getForStudent('Liam'));
+  const [bookedSessions, setBookedSessions] = useState(() => bookingsService.getForStudent(currentUser?.name || ''));
 
   useEffect(() => {
     const handleBookingsUpdate = () => {
-      setBookedSessions(bookingsService.getForStudent('Liam'));
+      setBookedSessions(bookingsService.getForStudent(currentUser?.name || ''));
     };
     const handlePlanningUpdate = (e) => {
       setPlanningAuthority(e.detail || planningAuthorityStore.getForChild('liam'));
@@ -257,7 +257,7 @@ export default function StudentDashboard({ onGoToReading, onGoToQuiz, onGoToChat
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <h2 style={{ fontSize: '1.6rem', margin: 0 }}>Jambo Liam!</h2>
+                <h2 style={{ fontSize: '1.6rem', margin: 0 }}>Jambo {currentUser?.name ? currentUser.name.split(' ')[0] : 'Learner'}!</h2>
                 <span className="glass-pill" style={{ background: '#F59E0B', color: '#0F172A', fontWeight: 800 }}>
                   LEVEL 5 EXPLORER
                 </span>

@@ -26,13 +26,13 @@ export default function PlanningDelegationModal({
 
   const handleSave = (e) => {
     e.preventDefault();
-    const targetTeacher = REGISTERED_TEACHERS.find(t => t.id === selectedTeacherId) || REGISTERED_TEACHERS[0];
+    const targetTeacher = (REGISTERED_TEACHERS || []).find(t => t.id === selectedTeacherId) || (REGISTERED_TEACHERS && REGISTERED_TEACHERS[0]) || null;
     
     planningAuthorityStore.setAuthority(childId, {
       authorityMode: selectedMode,
       assignedTeacherId: selectedTeacherId,
-      teacherName: targetTeacher.name,
-      teacherTsc: targetTeacher.tscNumber,
+      teacherName: targetTeacher ? targetTeacher.name : null,
+      teacherTsc: targetTeacher ? targetTeacher.tscNumber : null,
       permissions
     });
 
@@ -180,7 +180,11 @@ export default function PlanningDelegationModal({
 
             {/* Teacher Select */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '14px' }}>
-              {REGISTERED_TEACHERS.map((t) => (
+              {REGISTERED_TEACHERS.length === 0 ? (
+                <div style={{ padding: '12px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px' }}>
+                  No specialist teachers registered yet.
+                </div>
+              ) : REGISTERED_TEACHERS.map((t) => (
                 <div
                   key={t.id}
                   onClick={() => setSelectedTeacherId(t.id)}

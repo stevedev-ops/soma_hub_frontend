@@ -42,7 +42,7 @@ export default function Navbar({ activeTab, setActiveTab, activeStudent, setActi
               display: 'flex', alignItems: 'center', gap: '6px'
             }}
           >
-            <span>👦</span> Liam (G4 CBC)
+            <span>👦</span> {currentUser?.name ? currentUser.name.split(' ')[0] : 'Learner'}
           </button>
           <button 
             onClick={() => setActiveStudent('maya')}

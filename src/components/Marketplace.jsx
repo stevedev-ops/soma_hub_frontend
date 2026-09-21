@@ -8,38 +8,7 @@ import { Briefcase, MessageCircle, Send } from 'lucide-react';
 import ReviewModal from '../modules/marketplace/ReviewModal';
 import PodEscrowModal from '../modules/marketplace/PodEscrowModal';
 
-const INITIAL_BOOKINGS = [
-  {
-    id: 'BKG-9102',
-    tutorName: 'Teacher Mercy Cherono',
-    studentName: 'Liam Kariuki (Grade 4 CBC)',
-    parentName: 'Steve Kariuki',
-    parentPhone: '0712 345 678',
-    date: 'Tomorrow',
-    timeSlot: '10:00 AM - 11:30 AM',
-    sessionType: 'in_person',
-    estateAddress: 'Kilimani, Wood Avenue Court 4B',
-    focusSubject: 'Grade 4 CBC Mathematics: Fractions & Decimals',
-    amount: 2250,
-    receipt: 'SKM918274',
-    status: 'Confirmed'
-  },
-  {
-    id: 'BKG-9101',
-    tutorName: 'Teacher Mercy Cherono',
-    studentName: 'Aiden Patel (Year 5 Cambridge)',
-    parentName: 'Dr. Amina Patel',
-    parentPhone: '0722 889 123',
-    date: 'Thursday',
-    timeSlot: '02:00 PM - 03:30 PM',
-    sessionType: 'virtual',
-    estateAddress: 'Virtual Live Classroom',
-    focusSubject: 'Cambridge Primary Science: Water Purification',
-    amount: 2250,
-    receipt: 'SKM882190',
-    status: 'Confirmed'
-  }
-];
+const INITIAL_BOOKINGS = [];
 
 export default function Marketplace({ tutors: initialTutors, pods, onNavigateTab }) {
   const { currentUser, setIsProfileModalOpen } = useAuth();
@@ -56,7 +25,7 @@ export default function Marketplace({ tutors: initialTutors, pods, onNavigateTab
   const [selectedSubjectFilter, setSelectedSubjectFilter] = useState('ALL');
   const [newVacancyForm, setNewVacancyForm] = useState({
     title: '',
-    studentName: 'Liam Kiprop (Grade 4 CBC)',
+    studentName: '',
     curriculum: 'KICD CBC Grade 4',
     subject: 'Science & Mathematics',
     schedule: '2 Days / Week • Tue & Thu 10:00 AM - 11:30 AM',
@@ -105,7 +74,7 @@ export default function Marketplace({ tutors: initialTutors, pods, onNavigateTab
     setIsPostVacancyModalOpen(false);
     setNewVacancyForm({
       title: '',
-      studentName: 'Liam Kiprop (Grade 4 CBC)',
+      studentName: '',
       curriculum: 'KICD CBC Grade 4',
       subject: 'Science & Mathematics',
       schedule: '2 Days / Week • Tue & Thu 10:00 AM - 11:30 AM',

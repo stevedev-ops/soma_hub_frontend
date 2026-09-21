@@ -10,48 +10,7 @@ import StudentActivityTelemetryModal from '../../modules/parent/StudentActivityT
 import UpcomingSessionsModal from '../../modules/parent/UpcomingSessionsModal';
 import TutorHomeworkOverviewModal from '../../modules/parent/TutorHomeworkOverviewModal';
 
-const DEFAULT_PARENT_BOOKINGS = [
-  {
-    id: 'BKG-9102',
-    tutorName: 'Teacher Mercy Cherono',
-    tutorAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200',
-    studentName: 'Liam Kiprop (Grade 4 CBC)',
-    date: '2026-09-17',
-    timeSlot: '10:00 AM - 11:30 AM',
-    sessionType: 'virtual',
-    focusSubject: 'Grade 4 CBC Mathematics: Fractions & Decimals',
-    amount: 3500,
-    receipt: 'SKM849201',
-    status: 'Confirmed'
-  },
-  {
-    id: 'BKG-9103',
-    tutorName: 'Teacher Sarah Wambui',
-    tutorAvatar: 'https://images.unsplash.com/photo-1580894732488-b223d6a2a095?w=200',
-    studentName: 'Liam Kiprop (Grade 4 CBC)',
-    date: '2026-09-19',
-    timeSlot: '02:00 PM - 03:30 PM',
-    sessionType: 'in_person',
-    estateAddress: 'Kilimani Court 5',
-    focusSubject: 'Science Lab: Solar Filtration & Water Purification',
-    amount: 4000,
-    receipt: 'SKM918234',
-    status: 'Confirmed'
-  },
-  {
-    id: 'BKG-9104',
-    tutorName: 'Mwalimu Kevin Mwangi',
-    tutorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200',
-    studentName: 'Liam Kiprop (Grade 4 CBC)',
-    date: '2026-09-22',
-    timeSlot: '11:00 AM - 12:30 PM',
-    sessionType: 'virtual',
-    focusSubject: 'Kiswahili: Utunzi wa Mashairi na Ngeli za Nomino',
-    amount: 3000,
-    receipt: 'SKM772910',
-    status: 'Confirmed'
-  }
-];
+const DEFAULT_PARENT_BOOKINGS = [];
 
 export default function FamilyCommandCenter({
   childrenList = [],
@@ -67,12 +26,12 @@ export default function FamilyCommandCenter({
   const [inspectingHw, setInspectingHw] = useState(null);
 
   // Load telemetry and homework with live reactive sync
-  const [telemetry, setTelemetry] = useState(() => telemetryService.getTelemetry('Liam Kiprop'));
+  const [telemetry, setTelemetry] = useState(() => telemetryService.getTelemetry(childrenList?.[0]?.name || ''));
   const [homeworkList, setHomeworkList] = useState(() => homeworkService.getAll());
 
   useEffect(() => {
     const handleSync = () => {
-      setTelemetry(telemetryService.getTelemetry('Liam Kiprop'));
+      setTelemetry(telemetryService.getTelemetry(childrenList?.[0]?.name || ''));
       setHomeworkList(homeworkService.getAll());
     };
     window.addEventListener('storage', handleSync);
@@ -88,7 +47,7 @@ export default function FamilyCommandCenter({
     try {
       const b = localStorage.getItem('somahome_client_bookings_v2');
       const parsed = b ? JSON.parse(b) : [];
-      return parsed && parsed.length >= 3 ? parsed : DEFAULT_PARENT_BOOKINGS;
+      return parsed ? parsed : [];
     } catch {
       return DEFAULT_PARENT_BOOKINGS;
     }
@@ -687,7 +646,7 @@ export default function FamilyCommandCenter({
         <StudentActivityTelemetryModal
           isOpen={isTelemetryOpen}
           onClose={() => setIsTelemetryOpen(false)}
-          studentName="Liam Kiprop"
+          studentName={childrenList?.[0]?.name || currentUser?.name || 'Learner'}
         />
       )}
 
@@ -764,7 +723,7 @@ export default function FamilyCommandCenter({
             {inspectingHw.studentSubmission ? (
               <div style={{ background: 'rgba(16, 185, 129, 0.08)', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.25)', padding: '14px', fontSize: '0.84rem', marginBottom: '16px' }}>
                 <div style={{ color: '#10B981', fontWeight: 700, marginBottom: '6px' }}>
-                  Liam's Submission ({inspectingHw.studentSubmission.submittedAt}):
+                  {inspectingHw?.studentName || 'Student'}'s Submission ({inspectingHw.studentSubmission.submittedAt}):
                 </div>
                 <div style={{ color: '#F8FAFC', whiteSpace: 'pre-wrap', lineHeight: 1.4, fontFamily: 'var(--font-mono)', fontSize: '0.8rem' }}>
                   {inspectingHw.studentSubmission.text}

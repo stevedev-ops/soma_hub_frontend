@@ -1,7 +1,5 @@
-// Formative Assessment & KNEC CBA Rubrics Store
-// Manages Level 1-4 competency evaluations for lessons and syncs with official transcripts
-
-const RUBRIC_STORAGE_KEY = 'somahome_cba_rubrics_v1';
+// Formative Assessment & KNEC CBA Rubrics Store (Clean 0-Mock State)
+const RUBRIC_STORAGE_KEY = 'somahome_cba_rubrics_v2';
 
 export const CBA_LEVELS = {
   EE: {
@@ -52,21 +50,13 @@ export const cbaRubricStore = {
       const data = localStorage.getItem(RUBRIC_STORAGE_KEY);
       if (data) return JSON.parse(data);
     } catch (e) {}
-
-    // Default seeded baseline evaluations
-    return {
-      'liam_Mathematics': { rating: 'EE', level: 4, subject: 'Mathematics Activities', remark: 'Outstanding grasp of fractions, place value and spatial reasoning.', date: '2026-09-15' },
-      'liam_Science': { rating: 'EE', level: 4, subject: 'Science & Technology', remark: 'Constructed 4-tier jiko charcoal & sand water filter independently.', date: '2026-09-16' },
-      'liam_English': { rating: 'ME', level: 3, subject: 'English Language & Literacy', remark: 'Composes vivid descriptive safari essays with strong vocabulary.', date: '2026-09-14' },
-      'liam_Kiswahili': { rating: 'ME', level: 3, subject: 'Kiswahili Lugha na Kusoma', remark: 'Anaelewa ngeli za A-WA vizuri na anashiriki kwa ufasaha.', date: '2026-09-15' },
-      'liam_Agriculture': { rating: 'EE', level: 4, subject: 'Agriculture & Nutrition', remark: 'Demonstrates container gardening and organic soil composting.', date: '2026-09-16' },
-      'liam_Creative': { rating: 'ME', level: 3, subject: 'Creative Arts & Music', remark: 'Creates patterned Kitenge collage and rhythmic percussion.', date: '2026-09-13' }
-    };
+    return {};
   },
 
-  getForStudent(studentId = 'liam') {
+  getForStudent(studentId = '') {
     const all = this.getAll();
     const result = {};
+    if (!studentId) return all;
     Object.keys(all).forEach(key => {
       if (key.startsWith(studentId + '_')) {
         const subjectKey = key.replace(studentId + '_', '');
@@ -97,9 +87,9 @@ export const cbaRubricStore = {
     return all[key];
   },
 
-  calculateSummary(studentId = 'liam') {
+  calculateSummary(studentId = '') {
     const studentEvals = Object.values(this.getForStudent(studentId));
-    if (studentEvals.length === 0) return { overall: 'ME', avgLevel: 3.0, total: 0 };
+    if (studentEvals.length === 0) return { overall: 'N/A', avgLevel: '0.0', total: 0, evaluations: [] };
 
     const totalLevel = studentEvals.reduce((acc, curr) => acc + (curr.level || 3), 0);
     const avg = totalLevel / studentEvals.length;

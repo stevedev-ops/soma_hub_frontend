@@ -109,44 +109,7 @@ const ALL_VERIFIED_TEACHERS = [
   }
 ];
 
-const DEFAULT_THREADS = {
-  direct_steve: [
-    {
-      id: 1,
-      senderId: 'mercy_tutor',
-      senderName: 'Teacher Mercy Wanjiku',
-      senderRole: 'tutor',
-      text: "Habari Steve! I reviewed Liam's mechanical water filter project on his portfolio. He achieved Level 4 (EE). Truly exceptional work.",
-      time: '09:15 AM'
-    },
-    {
-      id: 2,
-      senderId: 'steve_parent',
-      senderName: 'Steve Kariuki (Parent)',
-      senderRole: 'parent',
-      text: "Thank you Teacher Mercy! He really enjoyed assembling the layers with the jiko charcoal. Will you be visiting for tomorrow's fractions lesson?",
-      time: '09:20 AM'
-    }
-  ],
-  kilimani: [
-    {
-      id: 1,
-      senderId: 'amina_parent',
-      senderName: 'Dr. Amina Patel',
-      senderRole: 'parent',
-      text: 'Hi Kilimani pod! The Lego robotics kits have arrived for Thursday STEM session.',
-      time: 'Yesterday'
-    },
-    {
-      id: 2,
-      senderId: 'steve_parent',
-      senderName: 'Steve Kariuki (Parent)',
-      senderRole: 'parent',
-      text: 'Awesome! Liam is excited. Should we bring our laptops or tablets?',
-      time: 'Yesterday'
-    }
-  ]
-};
+const DEFAULT_THREADS = {};
 
 export default function CommunityChat() {
   const { currentUser } = useAuth();
