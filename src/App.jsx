@@ -364,6 +364,7 @@ function MainApp() {
       <AIAssistantWidget
         currentUser={currentUser}
         activeStudent={activeStudent}
+        childrenList={childrenList}
         onOpenLogin={() => setIsLoginModalOpen(true)}
       />
 

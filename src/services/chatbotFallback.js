@@ -2,7 +2,7 @@
  * SomaHome Client-Side AI Reasoning, NLP Engine, and Agentic Action Executor
  */
 
-export const generateLocalAIResponse = (userMessage, currentUser, activeStudent) => {
+export const generateLocalAIResponse = (userMessage, currentUser, activeStudent, childrenList = []) => {
   const raw = (userMessage || '').trim();
   const clean = raw
     .toLowerCase()
@@ -18,20 +18,50 @@ export const generateLocalAIResponse = (userMessage, currentUser, activeStudent)
   }
   const userName = isAuth ? rawName : 'Guest Visitor';
   const userRole = isAuth ? (currentUser.role || 'PARENT') : 'GUEST';
-  const estate = currentUser?.estate || 'Nairobi, Kenya';
+  const estate = currentUser?.estate || 'Kilimani, Nairobi';
 
-  let resolvedChild = 'Liam Kariuki';
+  // Build complete multi-child household list
+  let familyRoster = [
+    { id: 'liam', name: 'Liam Kariuki', grade: 'Grade 4 (CBC)', curriculum: 'CBC', percent: 85, completed: 34, total: 40, project: 'Science Lab & Water Filtration', rubric: 'Level 4: EE (Exceeding Expectations)' },
+    { id: 'maya', name: 'Maya Kariuki', grade: 'Grade 2 (Cambridge)', curriculum: 'Cambridge', percent: 90, completed: 36, total: 40, project: 'Phonics & Creative Expression', rubric: 'Level 4: EE (Exceeding Expectations)' },
+    { id: 'mike', name: 'Mike Kariuki', grade: 'PP2 Playgroup (CBC)', curriculum: 'CBC', percent: 75, completed: 30, total: 40, project: 'Motor Skills & Color Sorting', rubric: 'Level 3: ME (Meeting Expectations)' }
+  ];
+
+  if (Array.isArray(childrenList) && childrenList.length > 0) {
+    familyRoster = childrenList.map(c => ({
+      id: c.id || c.name?.toLowerCase()?.replace(/\s+/g, '_'),
+      name: c.name || 'Learner Kariuki',
+      grade: c.grade || 'Grade 4 (CBC)',
+      curriculum: c.curriculum || 'CBC',
+      percent: c.percent || 85,
+      completed: c.completed || 34,
+      total: c.total || 40,
+      project: c.project || 'Environmental Science',
+      rubric: c.rubric || 'Level 4: EE (Exceeding Expectations)'
+    }));
+  }
+
+  // Determine active / focused child
+  let resolvedChild = familyRoster[0]?.name || 'Liam Kariuki';
+  let resolvedGrade = familyRoster[0]?.grade || 'Grade 4 (CBC)';
+  let resolvedCurriculum = familyRoster[0]?.curriculum || 'CBC';
+
   if (activeStudent) {
-    if (typeof activeStudent === 'object' && activeStudent.name) {
-      resolvedChild = activeStudent.name;
+    const actId = typeof activeStudent === 'object' ? activeStudent.id : activeStudent;
+    const match = familyRoster.find(c => c.id === actId || c.name.toLowerCase().includes(String(actId).toLowerCase()));
+    if (match) {
+      resolvedChild = match.name;
+      resolvedGrade = match.grade;
+      resolvedCurriculum = match.curriculum;
     } else if (typeof activeStudent === 'string' && activeStudent !== 'child' && activeStudent !== 'learner') {
       resolvedChild = activeStudent.charAt(0).toUpperCase() + activeStudent.slice(1);
       if (!resolvedChild.includes(' ')) resolvedChild += ' Kariuki';
     }
   }
+
   const childName = isAuth ? resolvedChild : null;
-  const childGrade = (activeStudent && typeof activeStudent === 'object' ? activeStudent.grade : null) || 'Grade 4 (CBC)';
-  const childCurriculum = (activeStudent && typeof activeStudent === 'object' ? activeStudent.curriculum : null) || 'CBC';
+  const childGrade = isAuth ? resolvedGrade : 'Grade 4 (CBC)';
+  const childCurriculum = isAuth ? resolvedCurriculum : 'CBC';
 
   // --- SECURITY FIREWALL & INJECTION DEFENSE ---
   const maliciousPatterns = [
@@ -69,7 +99,7 @@ For technical support or institutional partnerships, please contact **support@so
 If you need formal partnership figures or official institutional inquiries, please contact our support team at **support@somahome.co.ke** or via WhatsApp.`;
   }
 
-    // --- AGENTIC ACTIONS ---
+  // --- AGENTIC ACTIONS ---
 
   // 1. Action: ADD LEARNER
   if (isAuth && (clean.includes('add my daughter') || clean.includes('add my son') || clean.includes('add child') || clean.includes('add kid') || clean.includes('add learner') || clean.includes('register my child') || clean.includes('enroll my child'))) {
@@ -99,13 +129,12 @@ If you need formal partnership figures or official institutional inquiries, plea
       avatar: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=150'
     };
 
-    // Auto dispatch UI sync event
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('somahome:student-added', { detail: studentObj }));
     }
 
     return {
-      response: `🎉 **Action Executed: ${childFirstName} has been added to your family dashboard!**\n\n• **Learner Name:** ${childFirstName} ${lastName}\n• **Grade & Curriculum:** ${gradeLevel} (${curriculumCode})\n• **Status:** Active & Ready for Term 1\n• **Sunday Print Pack:** Available to download now\n\nI have synchronized your parent dashboard. You can now select ${childFirstName} from the top learner dropdown anytime!`,
+      response: `🎉 **Action Executed: ${childFirstName} has been enrolled in your family dashboard!**\n\n• **Learner Name:** ${childFirstName} ${lastName}\n• **Grade & Curriculum:** ${gradeLevel} (${curriculumCode})\n• **Status:** Active & Ready for Term 1\n• **Sunday Print Pack:** Available to download now\n\nI have synchronized your parent dashboard. You can now select ${childFirstName} from the top learner dropdown anytime!`,
       action: {
         type: 'STUDENT_ADDED',
         student: studentObj
@@ -157,21 +186,45 @@ If you need formal partnership figures or official institutional inquiries, plea
     };
   }
 
-  // Standard Conversational NLP Fallbacks (if not action)
+  // --- MULTI-CHILD SPECIFIC INQUIRIES ---
+  if (isAuth && (clean.includes('how many kids') || clean.includes('how many children') || clean.includes('my kids') || clean.includes('my children') || clean.includes('who are my kids') || clean.includes('who are my children') || clean.includes('list my kids') || clean.includes('list my children') || clean.includes('my learners'))) {
+    const rosterList = familyRoster.map(s => `• 🎓 **${s.name}** — ${s.grade} • **${s.percent}% completed** (${s.completed}/${s.total} lessons)`).join('\n');
+    return `👨‍👩‍👧 **You have ${familyRoster.length} enrolled learners in your household:**\n\n${rosterList}\n\n📌 **Currently focused in your dashboard:** **${childName}** (${childGrade})\n\nYou can ask me about any child's specific lessons, schedule, or project rubrics!`;
+  }
+
+  // Specific Child Inquiries: Maya
+  if (isAuth && clean.includes('maya')) {
+    const maya = familyRoster.find(c => c.name.toLowerCase().includes('maya')) || { grade: 'Grade 2 (Cambridge)', percent: 90, completed: 36, total: 40, project: 'Phonics & Creative Expression' };
+    return `👧 **Maya Kariuki's Academic Overview:**\n\n• **Pathway:** ${maya.grade}\n• **Term 1 Progress:** **${maya.percent}% Completed** (${maya.completed} of ${maya.total} lessons)\n• **Recent Project:** *${maya.project}* — **Level 4: EE (Exceeding Expectations)**\n• **Next Scheduled Activity:** Stage 2 Science Lab (Plant Life Cycles)\n\nWould you like to switch to Maya's dashboard or download her Sunday Print Pack?`;
+  }
+
+  // Specific Child Inquiries: Mike
+  if (isAuth && clean.includes('mike')) {
+    const mike = familyRoster.find(c => c.name.toLowerCase().includes('mike')) || { grade: 'PP2 Playgroup (CBC)', percent: 75, completed: 30, total: 40, project: 'Motor Skills & Color Sorting' };
+    return `👶 **Mike Kariuki's Early Years Overview:**\n\n• **Pathway:** ${mike.grade}\n• **Term 1 Progress:** **${mike.percent}% Completed** (${mike.completed} of ${mike.total} lessons)\n• **Recent Project:** *${mike.project}* — **Level 3: ME (Meeting Expectations)**\n• **Focus Area:** Gross & Fine Motor Development, Phonics Listening\n\nWould you like to download Mike's Early Years Activity Playbook?`;
+  }
+
+  // Specific Child Inquiries: Liam
+  if (isAuth && clean.includes('liam')) {
+    const liam = familyRoster.find(c => c.name.toLowerCase().includes('liam')) || { grade: 'Grade 4 (CBC)', percent: 85, completed: 34, total: 40, project: 'Environmental Science & Water Filtration' };
+    return `👦 **Liam Kariuki's Academic Overview:**\n\n• **Pathway:** ${liam.grade}\n• **Term 1 Progress:** **${liam.percent}% Completed** (${liam.completed} of ${liam.total} lessons)\n• **Recent Project:** *${liam.project}* — **Level 4: EE (Exceeding Expectations)**\n• **Today's Next Lesson:** Science & Tech (Lesson 19: Living Organisms)\n\nWould you like to view Liam's full schedule or export his Term 1 Report Card?`;
+  }
+
+  // Identity / Profile
+  if (clean.includes('do you know me') || clean.includes('who am i') || clean.includes('my name') || clean.includes('my profile') || clean.includes('who is logged in')) {
+    if (isAuth) {
+      const rosterList = familyRoster.map(s => `  - **${s.name}**: ${s.grade} (${s.percent}% progress)`).join('\n');
+      return `👤 **Yes, I know you! Here are your account details:**\n\n• **Parent / Account:** **${userName}**\n• **Role:** **${userRole}**\n• **Location:** ${estate}\n• **Enrolled Children (${familyRoster.length} total):**\n${rosterList}\n• **Active Learner in View:** **${childName}** (${childGrade})\n\nHow can I help you manage your learners' studies today?`;
+    } else {
+      return `🌐 **You are currently browsing as a Guest Visitor** (not logged in).\n\nAs a guest, you can explore curriculum overviews, pricing, and tutor directories. To link your account and learner records, please **Log In** via the top navigation bar.`;
+    }
+  }
+
   if (['yes', 'yeah', 'yep', 'sure', 'please', 'ok', 'okay', 'show me', 'show me rubrics', 'view schedule'].includes(clean)) {
     if (isAuth) {
       return `📋 **Live Academic Portfolio & Today's Schedule for ${childName}:**\n\n🌟 **Recent Project Rubrics (KICD Competency Level):**\n• **Project:** *Water Filtration & Environmental Conservation*\n• **Score:** **Level 4: EE (Exceeding Expectations)**\n• **Assessor Feedback:** *'Outstanding critical thinking! Documented scientific principles accurately.'*\n\n📅 **Today's Daily Lesson Schedule:**\n1. **Mathematics:** Fractions & Decimals (Lesson 18 of 20) — ✅ *Completed*\n2. **Science & Tech:** Living Organisms & Habitats (Lesson 19) — ⏳ *In Progress*\n3. **Language & Literacy:** Creative Story Composition — 📌 *Scheduled (2:00 PM)*\n\nWould you like to export the official **PDF Report Card** or download the **Sunday Print Pack** for this week?`;
     } else {
       return `📋 **Sample Academic Rubric & Schedule (Demo):**\n\n🌟 **Sample Rubric Score:**\n• **Project:** *Science Lab Experiment (Water Cycle)*\n• **Evaluation:** **EE (Exceeding Expectations)**\n\n📅 **Sample Daily Schedule:**\n1. Math (45 min) • 2. Science Lab (60 min) • 3. English Composition (45 min)\n\n🔒 *Log in to your parent account to customize and track your learner's real-time schedule.*`;
-    }
-  }
-
-  // Identity
-  if (clean.includes('do you know me') || clean.includes('who am i') || clean.includes('my name') || clean.includes('my profile') || clean.includes('who is logged in')) {
-    if (isAuth) {
-      return `👤 **Yes, I know you! Here are your account details:**\n\n• **User / Account:** **${userName}**\n• **Role:** **${userRole}**\n• **Estate / Location:** ${estate}\n• **Linked Learner:** **${childName}** (${childGrade} • ${childCurriculum})\n• **Current Progress:** 34 of 40 lessons completed (85% Term 1)\n\nYou have full access to manage your learner's schedule, rubric scores, and Sunday print packs. How can I help you right now?`;
-    } else {
-      return `🌐 **You are currently browsing as a Guest Visitor** (not logged in).\n\nAs a guest, you can explore curriculum overviews, pricing, and tutor directories. To link your account and learner records, please **Log In** via the top navigation bar.`;
     }
   }
 
@@ -181,7 +234,7 @@ If you need formal partnership figures or official institutional inquiries, plea
   }
 
   // Overview
-  return `💡 **SomaHome AI Assistant:**\n\nI understand you are asking about: *"${raw}"*\n\nHere is how SomaHome supports you:\n• **Curriculum & Grades:** Comprehensive 12-week lesson plans for Kenya CBC (PP1–Grade 9) and British Cambridge (Stage 1–9).\n• **Learner Capacity:** You can enroll unlimited children under one parent account with separate portfolios for each.\n• **Sunday Print Packs:** Downloadable weekly homework and science lab worksheets.\n• **Tutors & Exam Registration:** Direct access to vetted Nairobi tutors and KNEC private candidate guidance.\n\nFeel free to ask any specific question about your grade, lessons, or fees!`;
+  return `💡 **SomaHome AI Assistant:**\n\nI understand you are asking about: *"${raw}"*\n\n• **Enrolled Learners:** You have **${familyRoster.length} learners** registered (${familyRoster.map(s => s.name).join(', ')}).\n• **Sunday Print Packs:** Downloadable weekly homework and science lab worksheets.\n• **Tutors & Exam Registration:** Direct access to vetted Nairobi tutors and KNEC private candidate guidance.\n\nFeel free to ask any specific question about your grade, lessons, or fees!`;
 };
 
 export const generateClientBotResponse = generateLocalAIResponse;
