@@ -1,10 +1,11 @@
-import React from 'react';
+﻿import React from 'react';
 import AdminDashboard from '../../components/views/AdminDashboard';
 import LegalConcierge from '../../components/views/LegalConcierge';
 import Marketplace from '../../components/Marketplace';
 import CurriculumExplorer from '../../components/views/CurriculumExplorer';
+import AdminAIChatLogs from '../../components/views/AdminAIChatLogs';
 
-export default function AdminModule({ activeTab, tutors = [], pods = [] }) {
+export default function AdminModule({ activeTab, setActiveTab, tutors = [], pods = [] }) {
   return (
     <div>
       {activeTab === 'curriculum_library' && (
@@ -12,7 +13,11 @@ export default function AdminModule({ activeTab, tutors = [], pods = [] }) {
       )}
 
       {(activeTab === 'admin_hq' || !activeTab) && (
-        <AdminDashboard />
+        <AdminDashboard setActiveTab={setActiveTab} />
+      )}
+
+      {activeTab === 'ai_logs' && (
+        <AdminAIChatLogs />
       )}
 
       {activeTab === 'legal' && (

@@ -32,6 +32,7 @@ export default function LoginPage({ onClose }) {
     childName: '',
     childGrade: 'Grade 4 (CBC)',
     childCurriculum: 'CBC',
+    childPin: '1234',
     tscNumber: '',
     hourlyRateKes: '1500',
     subjects: 'Mathematics & Science',
@@ -99,6 +100,7 @@ export default function LoginPage({ onClose }) {
         childName: regForm.childName,
         childGrade: regForm.childGrade,
         childCurriculum: regForm.childCurriculum,
+        childPin: regForm.childPin || '1234',
         hourlyRateKes: regForm.hourlyRateKes,
         bio: regForm.bio
       });
@@ -499,6 +501,20 @@ export default function LoginPage({ onClose }) {
                         style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-card)', borderRadius: '6px', padding: '7px 10px', color: '#fff', fontSize: '0.82rem' }}
                       />
                     </div>
+                  </div>
+                  <div style={{ marginTop: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                      <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>4-Digit Tablet PIN (for child login):</label>
+                      <span style={{ fontSize: '0.68rem', color: '#38BDF8' }}>Default: 1234</span>
+                    </div>
+                    <input
+                      type="text"
+                      maxLength={6}
+                      placeholder="1234"
+                      value={regForm.childPin}
+                      onChange={(e) => setRegForm({ ...regForm, childPin: e.target.value })}
+                      style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-card)', borderRadius: '6px', padding: '7px 10px', color: '#fff', fontSize: '0.82rem', letterSpacing: '3px', fontWeight: 700, textAlign: 'center' }}
+                    />
                   </div>
                 </div>
               )}

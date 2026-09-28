@@ -1,3 +1,4 @@
+import AIAssistantWidget from './components/AIAssistantWidget';
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Sidebar from './components/Sidebar';
@@ -235,6 +236,7 @@ function MainApp() {
         {currentUser?.role === 'admin' && (
           <AdminModule
             activeTab={activeTab}
+            setActiveTab={setActiveTab}
             tutors={tutors}
             pods={pods}
           />
@@ -294,6 +296,13 @@ function MainApp() {
       {showOnboarding && (
         <OnboardingWizard onComplete={() => { setShowOnboarding(false); setActiveTab('family_dashboard'); }} />
       )}
+
+      {/* 24/7 Intelligent AI Assistant (Guest & Logged-in Context-Aware) */}
+      <AIAssistantWidget
+        currentUser={currentUser}
+        activeStudent={activeStudent}
+        onOpenLogin={() => setIsLoginModalOpen(true)}
+      />
 
       {/* SEN Accessibility Modal */}
       <SENSettingsModal isOpen={showSEN} onClose={() => setShowSEN(false)} />

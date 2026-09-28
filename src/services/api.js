@@ -235,7 +235,90 @@ export const api = {
         error: 'Confirmation failed.'
       };
     }
+  },
+
+  // AI Chatbot Assistant & Super Admin Platform Intelligence
+  async sendPublicChatMessage(message, sessionId, guestName = 'Guest Visitor') {
+    try {
+      const res = await fetch(`${API_BASE}/chatbot/public/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, session_id: sessionId, guest_name: guestName })
+      });
+      return await res.json();
+    } catch (e) {
+      return {
+        response: "Hello! I am having trouble reaching the server right now. Please check your internet connection or reach us on WhatsApp.",
+        is_meaningful: false,
+        error: e.message
+      };
+    }
+  },
+
+  async sendAuthChatMessage(message, sessionId, studentId = null, userEmail = null) {
+    try {
+      const res = await fetch(`${API_BASE}/chatbot/authenticated/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message,
+          session_id: sessionId,
+          student_id: studentId,
+          user_email: userEmail
+        })
+      });
+      return await res.json();
+    } catch (e) {
+      return {
+        response: "I'm having trouble syncing with your live homeschool data right now. Please try again in a moment.",
+        is_meaningful: false,
+        error: e.message
+      };
+    }
+  },
+
+  async getAdminChatLogs(params = {}) {
+    try {
+      const query = new URLSearchParams();
+      if (params.category && params.category !== 'ALL') query.append('category', params.category);
+      if (params.user_type && params.user_type !== 'ALL') query.append('user_type', params.user_type);
+      if (params.sentiment && params.sentiment !== 'ALL') query.append('sentiment', params.sentiment);
+      if (params.search) query.append('search', params.search);
+
+      const res = await fetch(`${API_BASE}/chatbot/admin/logs/?${query.toString()}`);
+      return await res.json();
+    } catch (e) {
+      return { total_conversations: 0, conversations: [] };
+    }
+  },
+
+  async updateAdminConversation(conversationId, data = {}) {
+    try {
+      const res = await fetch(`${API_BASE}/chatbot/admin/logs/${conversationId}/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      return await res.json();
+    } catch (e) {
+      return { error: e.message };
+    }
+  },
+
+  async getAdminChatAnalytics() {
+    try {
+      const res = await fetch(`${API_BASE}/chatbot/admin/analytics/`);
+      return await res.json();
+    } catch (e) {
+      return {
+        total_meaningful_conversations: 0,
+        total_logged_messages: 0,
+        categories_breakdown: [],
+        improvement_insights: []
+      };
+    }
   }
 };
+
 
 export default api;

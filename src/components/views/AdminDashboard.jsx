@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import { 
-  ShieldCheck, TrendingUp, Users, DollarSign, Check, X, Smartphone, 
+  Bot, ShieldCheck, TrendingUp, Users, DollarSign, Check, X, Smartphone, 
   UserX, UserCheck, AlertTriangle, Search, Filter, BookOpen, Upload, 
   Download, CheckCircle2, Sparkles, FileCode, Plus 
 } from 'lucide-react';
@@ -309,6 +309,25 @@ export default function AdminDashboard() {
           </div>
           <div style={{ fontSize: '0.75rem', color: teachers.some((t) => t.status === 'suspended') ? '#F87171' : '#10B981', marginTop: '4px' }}>
             {teachers.filter((t) => t.status === 'suspended').length} Suspended/Cancelled
+          </div>
+        </div>
+
+        <div className="glass-panel" style={{ padding: '20px', border: '1px solid rgba(16, 185, 129, 0.3)', background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(15, 23, 42, 0.6) 100%)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.8rem', color: '#34D399', fontWeight: 700 }}>AI SOMABOT INTELLIGENCE</span>
+            <Bot size={18} color="#34D399" />
+          </div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#F8FAFC', marginTop: '6px' }}>Self-Hosted</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
+            <span style={{ fontSize: '0.75rem', color: '#10B981' }}>Filtered Noise (0 spam)</span>
+            {setActiveTab && (
+              <button 
+                onClick={() => setActiveTab('ai_logs')}
+                style={{ background: '#00A651', border: 'none', color: '#fff', fontSize: '0.75rem', padding: '4px 10px', borderRadius: '6px', cursor: 'pointer', fontWeight: 700 }}
+              >
+                Inspect Logs ?
+              </button>
+            )}
           </div>
         </div>
       </div>
