@@ -218,7 +218,7 @@ function ActionCard({ action, onActionClick }) {
 }
 
 
-export default function AIAssistantWidget({ currentUser, activeStudent, onOpenLogin }) {
+export default function AIAssistantWidget({ currentUser, activeStudent, childrenList = [], onOpenLogin }) {
   const [isOpen, setIsOpen] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -434,7 +434,7 @@ export default function AIAssistantWidget({ currentUser, activeStudent, onOpenLo
     try {
       let data;
       if (effectiveUser) {
-        data = await api.sendAuthChatMessage(textToSend, sessionId, activeStudent, effectiveUser);
+        data = await api.sendAuthChatMessage(textToSend, sessionId, activeStudent, effectiveUser, childrenList);
       } else {
         data = await api.sendPublicChatMessage(textToSend, sessionId, 'Guest Visitor');
       }

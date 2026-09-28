@@ -255,7 +255,7 @@ export const api = {
     }
   },
 
-  async sendAuthChatMessage(message, sessionId, student = null, user = null) {
+  async sendAuthChatMessage(message, sessionId, student = null, user = null, children = []) {
     try {
       const studentId = typeof student === 'object' ? student?.id : student;
       const userEmail = typeof user === 'object' ? (user?.email || user?.username) : user;
@@ -270,14 +270,15 @@ export const api = {
           student_id: studentId,
           user_email: userEmail,
           user_name: userName,
-          user_role: userRole
+          user_role: userRole,
+          children: children
         })
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return await res.json();
     } catch (e) {
       // Instant Client Fallback Engine with Live Active Context
-      const reply = generateClientBotResponse(message, user, student);
+      const reply = generateClientBotResponse(message, user, student, children);
       return typeof reply === 'string' ? { response: reply } : reply;
     }
   },
