@@ -429,7 +429,25 @@ export default function Marketplace({ tutors: initialTutors, pods, onNavigateTab
       {/* CONTENT: TUTORS VIEW */}
       {activeTab === 'tutors' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '24px' }}>
-          {filteredTutors.map((tutor) => {
+          {filteredTutors.length === 0 ? (
+            <div className="glass-panel" style={{ padding: '48px 24px', textAlign: 'center', gridColumn: '1 / -1' }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>👨‍🏫</div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#FFFFFF', marginBottom: '6px' }}>
+                No Registered Teachers in This Area Yet
+              </h3>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', maxWidth: '480px', margin: '0 auto 20px', lineHeight: 1.5 }}>
+                Teachers in Kenya can self-register on SomaHome to offer 1-on-1 homeschooling lessons, CBC practical assessment support, and pod facilitation.
+              </p>
+              <button 
+                onClick={() => setIsProfileModalOpen ? setIsProfileModalOpen(true) : (window.location.hash = '#register')} 
+                className="btn-primary"
+                style={{ padding: '10px 22px', fontSize: '0.9rem', fontWeight: 700 }}
+              >
+                Join as a Verified Educator 🚀
+              </button>
+            </div>
+          ) : (
+          filteredTutors.map((tutor) => {
             const tutorSpecificReviews = recentReviews[tutor.id] || [];
             const isMyOwnCard = isTeacher && tutor.full_name?.toLowerCase().includes('mercy');
 
@@ -592,7 +610,7 @@ export default function Marketplace({ tutors: initialTutors, pods, onNavigateTab
 
               </div>
             );
-          })}
+          }))}
         </div>
       )}
 
