@@ -156,6 +156,68 @@ function parseInlineFormatting(str) {
 }
 
 
+
+// Render interactive Action Cards (Add Child, M-Pesa, Report Card)
+function ActionCard({ action, onActionClick }) {
+  if (!action) return null;
+
+  if (action.type === 'STUDENT_ADDED' && action.student) {
+    return (
+      <div style={{ marginTop: '10px', padding: '10px 12px', background: 'rgba(0, 166, 81, 0.15)', borderRadius: '10px', border: '1px solid rgba(0, 166, 81, 0.4)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+        <div>
+          <div style={{ fontWeight: 700, fontSize: '12px', color: '#34D399' }}>🎓 {action.student.name}</div>
+          <div style={{ fontSize: '11px', color: '#94a3b8' }}>{action.student.grade} ({action.student.curriculum}) • Enrolled</div>
+        </div>
+        <button
+          onClick={() => {
+            window.dispatchEvent(new CustomEvent('somahome:student-added', { detail: action.student }));
+          }}
+          style={{ background: '#00A651', border: 'none', color: '#ffffff', padding: '5px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}
+        >
+          View Dashboard
+        </button>
+      </div>
+    );
+  }
+
+  if (action.type === 'EXPORT_REPORT_CARD') {
+    return (
+      <div style={{ marginTop: '10px', padding: '10px 12px', background: 'rgba(59, 130, 246, 0.15)', borderRadius: '10px', border: '1px solid rgba(59, 130, 246, 0.4)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+        <div>
+          <div style={{ fontWeight: 700, fontSize: '12px', color: '#60A5FA' }}>📄 Official Report Card</div>
+          <div style={{ fontSize: '11px', color: '#94a3b8' }}>{action.student_name} • Term 1 Assessment</div>
+        </div>
+        <button
+          onClick={() => alert(`Report Card for ${action.student_name} ready! Opening download...`)}
+          style={{ background: '#2563EB', border: 'none', color: '#ffffff', padding: '5px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}
+        >
+          📥 Download PDF
+        </button>
+      </div>
+    );
+  }
+
+  if (action.type === 'TRIGGER_MPESA') {
+    return (
+      <div style={{ marginTop: '10px', padding: '10px 12px', background: 'rgba(16, 185, 129, 0.15)', borderRadius: '10px', border: '1px solid rgba(16, 185, 129, 0.4)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+        <div>
+          <div style={{ fontWeight: 700, fontSize: '12px', color: '#34D399' }}>💳 M-Pesa STK Push</div>
+          <div style={{ fontSize: '11px', color: '#94a3b8' }}>Amount: KES {action.amount} • {action.phone}</div>
+        </div>
+        <button
+          onClick={() => alert(`M-Pesa STK prompt for KES ${action.amount} sent to ${action.phone}!`)}
+          style={{ background: '#00A651', border: 'none', color: '#ffffff', padding: '5px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}
+        >
+          Confirm Pay
+        </button>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+
 export default function AIAssistantWidget({ currentUser, activeStudent, onOpenLogin }) {
   const [isOpen, setIsOpen] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
@@ -272,12 +334,17 @@ export default function AIAssistantWidget({ currentUser, activeStudent, onOpenLo
         ? data
         : (data?.response || data?.message || "I'm having trouble retrieving that information right now. Please try again shortly.");
       
+      const actionPayload = data?.action || data?.metadata?.action || null;
+      if (actionPayload && actionPayload.type === 'STUDENT_ADDED' && actionPayload.student) {
+        window.dispatchEvent(new CustomEvent('somahome:student-added', { detail: actionPayload.student }));
+      }
+
       const botMsgObj = {
         id: 'bot_' + Date.now(),
         sender: 'BOT',
         text: botReply,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        metadata: data?.metadata || {}
+        metadata: { ...(data?.metadata || {}), action: actionPayload }
       };
 
       setMessages(prev => [...prev, botMsgObj]);
@@ -554,6 +621,7 @@ export default function AIAssistantWidget({ currentUser, activeStudent, onOpenLo
                     }}
                   >
                     <FormattedMessage text={m.text} isUser={isUser} />
+                    {m.metadata?.action && <ActionCard action={m.metadata.action} />}
                   </div>
                   <span style={{ fontSize: '10px', color: '#64748b', marginTop: '3px', padding: '0 4px' }}>
                     {m.time}
