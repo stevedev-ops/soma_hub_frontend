@@ -1,12 +1,15 @@
+import { useAuth } from '../../context/AuthContext';
 import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import { 
+  LogOut, 
   Bot, ShieldCheck, TrendingUp, Users, DollarSign, Check, X, Smartphone, 
   UserX, UserCheck, AlertTriangle, Search, Filter, BookOpen, Upload, 
   Download, CheckCircle2, Sparkles, FileCode, Plus 
 } from 'lucide-react';
 
 export default function AdminDashboard() {
+  const { logout, setIsLoginModalOpen } = useAuth();
   const [tutorApplicants, setTutorApplicants] = useState([]);
   const [teachers, setTeachers] = useState([]);
   const [teacherFilter, setTeacherFilter] = useState('all'); // all, active, suspended
@@ -223,14 +226,34 @@ export default function AdminDashboard() {
     <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
       
       {/* Header */}
-      <div style={{ marginBottom: '24px' }}>
-        <span className="glass-pill" style={{ color: '#818CF8', border: '1px solid rgba(129,140,248,0.3)', marginBottom: '8px', display: 'inline-block' }}>
-          📊 Operations & Governance HQ
-        </span>
-        <h2 style={{ fontSize: '1.6rem', margin: 0, fontWeight: 800 }}>SomaHome Kenya Operations HQ</h2>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: '4px 0 0 0' }}>
-          Platform metrics, teacher cancellation & accreditation governance, and Safaricom Daraja ledger
-        </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+        <div>
+          <span className="glass-pill" style={{ color: '#818CF8', border: '1px solid rgba(129,140,248,0.3)', marginBottom: '8px', display: 'inline-block' }}>
+            📊 Operations & Governance HQ
+          </span>
+          <h2 style={{ fontSize: '1.6rem', margin: 0, fontWeight: 800 }}>SomaHome Kenya Operations HQ</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: '4px 0 0 0' }}>
+            Platform metrics, teacher cancellation & accreditation governance, and Safaricom Daraja ledger
+          </p>
+        </div>
+        
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <button
+            onClick={() => setIsLoginModalOpen(true)}
+            className="btn-secondary"
+            style={{ fontSize: '0.8rem', padding: '8px 14px' }}
+          >
+            <span>Switch Account</span>
+          </button>
+          <button
+            onClick={() => logout()}
+            className="btn-secondary"
+            style={{ fontSize: '0.8rem', padding: '8px 14px', color: '#FCA5A5', background: 'rgba(239, 68, 68, 0.15)', borderColor: 'rgba(239, 68, 68, 0.4)', display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            <LogOut size={14} color="#EF4444" />
+            <span>Sign Out</span>
+          </button>
+        </div>
       </div>
 
       {/* Admin Top-Level Navigation Tabs */}
