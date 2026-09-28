@@ -5,6 +5,157 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api';
 
+// Sleek Professional Message Renderer
+function FormattedMessage({ text, isUser }) {
+  if (isUser) {
+    return <span>{text}</span>;
+  }
+
+  // Split content by lines
+  const lines = (text || '').split('\n');
+  const elements = [];
+  let tableRows = [];
+  let inTable = false;
+
+  const flushTable = (key) => {
+    if (tableRows.length > 0) {
+      const header = tableRows[0];
+      const rows = tableRows.slice(1).filter(r => !r.every(c => /^[\s:-]+$/.test(c)));
+      elements.push(
+        <div key={`table-${key}`} style={{ overflowX: 'auto', margin: '10px 0', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.12)' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', textAlign: 'left' }}>
+            <thead>
+              <tr style={{ background: 'rgba(0, 166, 81, 0.2)', borderBottom: '1px solid rgba(255, 255, 255, 0.15)' }}>
+                {header.map((col, ci) => (
+                  <th key={ci} style={{ padding: '8px 10px', color: '#34D399', fontWeight: 600 }}>{parseInlineFormatting(col)}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, ri) => (
+                <tr key={ri} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)', background: ri % 2 === 0 ? 'transparent' : 'rgba(255, 255, 255, 0.02)' }}>
+                  {row.map((cell, ci) => (
+                    <td key={ci} style={{ padding: '8px 10px', color: '#e2e8f0' }}>{parseInlineFormatting(cell)}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+      tableRows = [];
+      inTable = false;
+    }
+  };
+
+  lines.forEach((line, index) => {
+    const trimmed = line.trim();
+
+    // Markdown Table handling
+    if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+      const cols = trimmed.split('|').slice(1, -1).map(c => c.trim());
+      tableRows.push(cols);
+      inTable = true;
+      return;
+    } else if (inTable) {
+      flushTable(index);
+    }
+
+    if (!trimmed) {
+      elements.push(<div key={index} style={{ height: '8px' }} />);
+      return;
+    }
+
+    // Headers (##, ###)
+    if (trimmed.startsWith('###')) {
+      elements.push(
+        <div key={index} style={{ fontWeight: 700, fontSize: '13px', color: '#34D399', marginTop: '10px', marginBottom: '4px' }}>
+          {parseInlineFormatting(trimmed.replace(/^###\s*/, ''))}
+        </div>
+      );
+      return;
+    }
+    if (trimmed.startsWith('##')) {
+      elements.push(
+        <div key={index} style={{ fontWeight: 700, fontSize: '14px', color: '#ffffff', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '4px', marginTop: '12px', marginBottom: '6px' }}>
+          {parseInlineFormatting(trimmed.replace(/^##\s*/, ''))}
+        </div>
+      );
+      return;
+    }
+
+    // Bullet points (•, -, *)
+    if (/^[•\-*]\s+/.test(trimmed)) {
+      elements.push(
+        <div key={index} style={{ display: 'flex', gap: '8px', paddingLeft: '4px', margin: '3px 0' }}>
+          <span style={{ color: '#00A651', fontWeight: 'bold' }}>•</span>
+          <span style={{ flex: 1 }}>{parseInlineFormatting(trimmed.replace(/^[•\-*]\s+/, ''))}</span>
+        </div>
+      );
+      return;
+    }
+
+    // Numbered list (1., 2., etc.)
+    if (/^\d+\.\s+/.test(trimmed)) {
+      const numMatch = trimmed.match(/^(\d+\.)\s+(.*)/);
+      elements.push(
+        <div key={index} style={{ display: 'flex', gap: '8px', paddingLeft: '4px', margin: '4px 0' }}>
+          <span style={{ color: '#34D399', fontWeight: 600, minWidth: '18px' }}>{numMatch[1]}</span>
+          <span style={{ flex: 1 }}>{parseInlineFormatting(numMatch[2])}</span>
+        </div>
+      );
+      return;
+    }
+
+    // Standard paragraph line
+    elements.push(
+      <div key={index} style={{ margin: '3px 0' }}>
+        {parseInlineFormatting(trimmed)}
+      </div>
+    );
+  });
+
+  if (inTable) {
+    flushTable('end');
+  }
+
+  return <div>{elements}</div>;
+}
+
+// Parses **bold** and *italic* cleanly into styled spans
+function parseInlineFormatting(str) {
+  if (!str) return '';
+  const parts = [];
+  // Regex to match **bold** or *italic*
+  const regex = /(\*\*([^*]+)\*\*)|(\*([^*]+)\*)|(__([^_]+)__)/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = regex.exec(str)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(str.substring(lastIndex, match.index));
+    }
+    if (match[2]) {
+      // **bold**
+      parts.push(<strong key={match.index} style={{ color: '#ffffff', fontWeight: 600 }}>{match[2]}</strong>);
+    } else if (match[4]) {
+      // *italic*
+      parts.push(<em key={match.index} style={{ color: '#cbd5e1' }}>{match[4]}</em>);
+    } else if (match[6]) {
+      // __bold__
+      parts.push(<strong key={match.index} style={{ color: '#ffffff', fontWeight: 600 }}>{match[6]}</strong>);
+    }
+    lastIndex = regex.lastIndex;
+  }
+
+  if (lastIndex < str.length) {
+    parts.push(str.substring(lastIndex));
+  }
+
+  return parts.length > 0 ? parts : str;
+}
+
+
 export default function AIAssistantWidget({ currentUser, activeStudent, onOpenLogin }) {
   const [isOpen, setIsOpen] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
@@ -402,7 +553,7 @@ export default function AIAssistantWidget({ currentUser, activeStudent, onOpenLo
                       boxShadow: isUser ? '0 4px 12px rgba(0, 166, 81, 0.2)' : 'none'
                     }}
                   >
-                    {m.text}
+                    <FormattedMessage text={m.text} isUser={isUser} />
                   </div>
                   <span style={{ fontSize: '10px', color: '#64748b', marginTop: '3px', padding: '0 4px' }}>
                     {m.time}
