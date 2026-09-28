@@ -56,6 +56,9 @@ export function AuthProvider({ children }) {
   const logout = () => {
     setCurrentUser(null);
     localStorage.removeItem('somahome_user');
+    localStorage.removeItem('somahome_parent_children_v3');
+    localStorage.removeItem('somahome_chat_session_id');
+    try { sessionStorage.clear(); } catch (e) {}
     setIsLoginModalOpen(false);
   };
 
