@@ -23,7 +23,7 @@ import { creatorStore } from './services/creatorStore';
 import { referralAttributionStore } from './services/referralAttributionStore';
 
 function MainApp() {
-  const { currentUser, isLoginModalOpen, setIsLoginModalOpen, switchAccount } = useAuth();
+  const { currentUser, isLoginModalOpen, setIsLoginModalOpen, switchAccount, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('family_dashboard');
   const [activeStudent, setActiveStudent] = useState('liam');
 
