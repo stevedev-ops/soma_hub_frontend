@@ -57,6 +57,25 @@ function MainApp() {
     localStorage.setItem('somahome_parent_children_v3', JSON.stringify(childrenList));
   }, [childrenList]);
 
+  // Listen for AI Assistant Action Executions (e.g. AI registers a learner)
+  useEffect(() => {
+    const handleStudentAdded = (event) => {
+      const newLearner = event.detail;
+      if (newLearner && newLearner.id) {
+        setChildrenList((prev) => {
+          const exists = prev.some((c) => c.id === newLearner.id || c.name === newLearner.name);
+          if (exists) return prev;
+          const updated = [...prev, newLearner];
+          localStorage.setItem('somahome_parent_children_v3', JSON.stringify(updated));
+          return updated;
+        });
+        setActiveStudent(newLearner.id);
+      }
+    };
+    window.addEventListener('somahome:student-added', handleStudentAdded);
+    return () => window.removeEventListener('somahome:student-added', handleStudentAdded);
+  }, []);
+
   const [isAddChildModalOpen, setIsAddChildModalOpen] = useState(false);
 
   const handleAddChild = async (newChild) => {

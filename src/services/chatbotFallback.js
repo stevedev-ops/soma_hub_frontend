@@ -1,6 +1,5 @@
 /**
- * SomaHome Client-Side AI Reasoning & NLP Engine
- * Pure offline, local semantic comprehension and conversation state manager.
+ * SomaHome Client-Side AI Reasoning, NLP Engine, and Agentic Action Executor
  */
 
 export const generateLocalAIResponse = (userMessage, currentUser, activeStudent) => {
@@ -34,346 +33,119 @@ export const generateLocalAIResponse = (userMessage, currentUser, activeStudent)
   const childGrade = (activeStudent && typeof activeStudent === 'object' ? activeStudent.grade : null) || 'Grade 4 (CBC)';
   const childCurriculum = (activeStudent && typeof activeStudent === 'object' ? activeStudent.curriculum : null) || 'CBC';
 
-  // 1. Affirmative follow-ups ("yes", "sure", "please do", "show me", "rubrics", "schedule", "yeah")
-  if (['yes', 'yeah', 'yep', 'sure', 'please', 'ok', 'okay', 'show me', 'show me rubrics', 'view schedule', 'yes please', 'do that'].includes(clean)) {
+  // --- AGENTIC ACTIONS ---
+
+  // 1. Action: ADD LEARNER
+  if (isAuth && (clean.includes('add my daughter') || clean.includes('add my son') || clean.includes('add child') || clean.includes('add kid') || clean.includes('add learner') || clean.includes('register my child') || clean.includes('enroll my child'))) {
+    const nameMatch = raw.match(/(?:daughter|son|child|kid|learner|name\s+is|named|called)\s+([a-zA-Z]+)/i);
+    const childFirstName = nameMatch ? (nameMatch[1].charAt(0).toUpperCase() + nameMatch[1].slice(1).toLowerCase()) : 'New Learner';
+    
+    let gradeLevel = 'Grade 1';
+    if (clean.includes('pp1')) gradeLevel = 'PP1';
+    else if (clean.includes('pp2')) gradeLevel = 'PP2';
+    else if (clean.includes('playgroup')) gradeLevel = 'Playgroup';
+    else {
+      const gMatch = clean.match(/(grade\s*\d+|stage\s*\d+|year\s*\d+)/i);
+      if (gMatch) gradeLevel = gMatch[1].toUpperCase();
+    }
+
+    const curriculumCode = (clean.includes('cambridge') || clean.includes('british')) ? 'Cambridge' : 'CBC';
+    const lastName = currentUser?.last_name || 'Kariuki';
+    const newId = 'child_' + Date.now();
+
+    const studentObj = {
+      id: newId,
+      name: `${childFirstName} ${lastName}`,
+      first_name: childFirstName,
+      last_name: lastName,
+      grade: gradeLevel,
+      curriculum: curriculumCode,
+      avatar: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=150'
+    };
+
+    // Auto dispatch UI sync event
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('somahome:student-added', { detail: studentObj }));
+    }
+
+    return {
+      response: `🎉 **Action Executed: ${childFirstName} has been added to your family dashboard!**\n\n• **Learner Name:** ${childFirstName} ${lastName}\n• **Grade & Curriculum:** ${gradeLevel} (${curriculumCode})\n• **Status:** Active & Ready for Term 1\n• **Sunday Print Pack:** Available to download now\n\nI have synchronized your parent dashboard. You can now select ${childFirstName} from the top learner dropdown anytime!`,
+      action: {
+        type: 'STUDENT_ADDED',
+        student: studentObj
+      }
+    };
+  }
+
+  // 2. Action: MARK LESSON COMPLETED
+  if (isAuth && (clean.includes('mark lesson') || clean.includes('complete lesson') || clean.includes('mark as completed') || clean.includes('mark today') || clean.includes('mark math') || clean.includes('mark science'))) {
+    let lessonName = 'Daily Lesson Guide';
+    if (clean.includes('math')) lessonName = 'Mathematics (Lesson 18)';
+    else if (clean.includes('science')) lessonName = 'Science & Tech (Lesson 19)';
+    else if (clean.includes('english') || clean.includes('literacy')) lessonName = 'English Literacy (Lesson 20)';
+
+    return {
+      response: `✅ **Action Executed: ${lessonName} has been marked as Completed!**\n\n• **Learner:** ${childName || 'Liam Kariuki'}\n• **Lesson:** ${lessonName}\n• **Status:** Completed (5/5 Stars ⭐⭐⭐⭐⭐)\n• **Updated Progress:** 88% term completion (35 of 40 lessons completed)\n\nYour parent progress chart and the student OS timetable have been updated in real-time.`,
+      action: {
+        type: 'LESSON_COMPLETED',
+        lesson: lessonName
+      }
+    };
+  }
+
+  // 3. Action: EXPORT REPORT CARD
+  if (clean.includes('export report') || clean.includes('download report') || clean.includes('get report card') || clean.includes('generate report') || clean.includes('pdf report')) {
+    const sName = childName || 'Liam Kariuki';
+    return {
+      response: `📄 **Action Executed: Official Report Card Compiled for ${sName}!**\n\n• **Student:** ${sName}\n• **Evaluation:** KICD Competency Rubric (EE - Exceeding Expectations)\n• **Term:** Term 1 (2026 Academic Year)\n\nClick the download button below to save your official PDF report card.`,
+      action: {
+        type: 'EXPORT_REPORT_CARD',
+        student_name: sName,
+        download_url: '/api/reports/card/1/'
+      }
+    };
+  }
+
+  // 4. Action: TRIGGER M-PESA
+  if (clean.includes('pay mpesa') || clean.includes('pay via mpesa') || clean.includes('pay 3500') || clean.includes('pay term fee') || clean.includes('trigger mpesa')) {
+    const phoneMatch = clean.match(/(07\d{8}|2547\d{8}|01\d{8})/);
+    const phone = phoneMatch ? phoneMatch[1] : '0712345678';
+
+    return {
+      response: `💳 **Action Ready: M-Pesa STK Push of KES 3,500 Prepared!**\n\n• **Package:** Term 1 Curriculum & Sunday Print Packs\n• **Amount:** KES 3,500\n• **Phone Number:** ${phone}\n\nTap the **Confirm M-Pesa Payment** button below to send the prompt directly to your phone.`,
+      action: {
+        type: 'TRIGGER_MPESA',
+        amount: 3500,
+        phone: phone
+      }
+    };
+  }
+
+  // Standard Conversational NLP Fallbacks (if not action)
+  if (['yes', 'yeah', 'yep', 'sure', 'please', 'ok', 'okay', 'show me', 'show me rubrics', 'view schedule'].includes(clean)) {
     if (isAuth) {
-      return `📋 **Live Academic Portfolio & Today's Schedule for ${childName}:**
-
-🌟 **Recent Project Rubrics (KICD Competency Level):**
-• **Project:** *Water Filtration & Environmental Conservation*
-• **Score:** **Level 4: EE (Exceeding Expectations)**
-• **Assessor Feedback:** *"Outstanding critical thinking! Demonstrated clean filtration and documented scientific principles accurately."*
-
-📅 **Today's Daily Lesson Schedule:**
-1. **Mathematics:** Fractions & Decimals (Lesson 18 of 20) — ✅ *Completed*
-2. **Science & Tech:** Living Organisms & Habitats (Lesson 19) — ⏳ *In Progress*
-3. **Language & Literacy:** Creative Story Composition — 📌 *Scheduled (2:00 PM)*
-
-Would you like to export the official **PDF Report Card** or download the **Sunday Print Pack** for this week?`;
+      return `📋 **Live Academic Portfolio & Today's Schedule for ${childName}:**\n\n🌟 **Recent Project Rubrics (KICD Competency Level):**\n• **Project:** *Water Filtration & Environmental Conservation*\n• **Score:** **Level 4: EE (Exceeding Expectations)**\n• **Assessor Feedback:** *'Outstanding critical thinking! Documented scientific principles accurately.'*\n\n📅 **Today's Daily Lesson Schedule:**\n1. **Mathematics:** Fractions & Decimals (Lesson 18 of 20) — ✅ *Completed*\n2. **Science & Tech:** Living Organisms & Habitats (Lesson 19) — ⏳ *In Progress*\n3. **Language & Literacy:** Creative Story Composition — 📌 *Scheduled (2:00 PM)*\n\nWould you like to export the official **PDF Report Card** or download the **Sunday Print Pack** for this week?`;
     } else {
-      return `📋 **Sample Academic Rubric & Schedule (Demo):**
-
-🌟 **Sample Rubric Score:**
-• **Project:** *Science Lab Experiment (Water Cycle)*
-• **Evaluation:** **EE (Exceeding Expectations)**
-
-📅 **Sample Daily Schedule:**
-1. Math (45 min) • 2. Science Lab (60 min) • 3. English Composition (45 min)
-
-🔒 *Log in to your parent account to customize and track your learner's real-time schedule.*`;
+      return `📋 **Sample Academic Rubric & Schedule (Demo):**\n\n🌟 **Sample Rubric Score:**\n• **Project:** *Science Lab Experiment (Water Cycle)*\n• **Evaluation:** **EE (Exceeding Expectations)**\n\n📅 **Sample Daily Schedule:**\n1. Math (45 min) • 2. Science Lab (60 min) • 3. English Composition (45 min)\n\n🔒 *Log in to your parent account to customize and track your learner's real-time schedule.*`;
     }
   }
 
-  // 2. Dashboards present / Platform views
-  if (
-    clean.includes('which dashboard') ||
-    clean.includes('what dashboard') ||
-    clean.includes('dashboards are present') ||
-    clean.includes('available dashboard') ||
-    clean.includes('dashboards exist') ||
-    clean.includes('list dashboard') ||
-    clean.includes('what views') ||
-    clean.includes('modules')
-  ) {
-    return `🖥️ **SomaHome features 5 specialized, role-based dashboards:**
-
-1️⃣ **👨‍👩‍👧 Parent Dashboard:**
-   • Multi-child overview, term package progress, Sunday pack downloads, SEN accessibility adjustments, and official PDF report cards.
-
-2️⃣ **🎒 Student OS & Daily Hub:**
-   • Distraction-free learner interface with daily lesson checklists, interactive quiz game, scratchpad, and worksheet submission.
-
-3️⃣ **👩‍🏫 Tutor & Facilitator Portal:**
-   • TSC-vetted mentor dashboard for grading project rubrics (EE/ME/AE/BE), session scheduling, and student feedback.
-
-4️⃣ **🎨 Creator & Publisher Marketplace:**
-   • Community portal for verified Kenyan educators to upload custom 12-week lesson bundles and earn royalties.
-
-5️⃣ **🛡️ Super Admin Control Center:**
-   • Platform-wide intelligence, M-Pesa financial audit, tenant management, and real-time AI conversation audit hub.
-
-You can switch between views anytime using the **Switch** button in the top navigation bar!`;
-  }
-
-  // 3. Weekly Packs / Sunday Print Packs / Worksheets
-  if (
-    clean.includes('weekly pack') ||
-    clean.includes('sunday pack') ||
-    clean.includes('print pack') ||
-    clean.includes('worksheet') ||
-    clean.includes('homework pack') ||
-    clean.includes('download pack') ||
-    clean.includes('get weekly')
-  ) {
-    return `📦 **Weekly Sunday Print Packs for ${childName || 'your learner'} (${childGrade}):**
-
-• **What's Included:** 12-week structured curriculum worksheets, daily lesson guides, homework exercises, and hands-on science lab instructions.
-• **How to Access:**
-  1. Go to your **Parent Dashboard** or **Family OS**.
-  2. Click the green **📥 Sunday Print Pack** button in the top banner.
-  3. Select your week (Week 1–12) to print or save the complete PDF worksheet booklet.
-
-Would you like to review today's lesson checklist for ${childName || 'your learner'}?`;
-  }
-
-  // 4. User Identity ("do you know me", "who am i", "my profile")
-  if (
-    clean.includes('do you know me') ||
-    clean.includes('who am i') ||
-    clean.includes('my name') ||
-    clean.includes('who is logged in') ||
-    clean.includes('what is my name') ||
-    clean.includes('my profile') ||
-    clean.includes('my account') ||
-    clean.includes('who i am') ||
-    clean.includes('know me')
-  ) {
+  // Identity
+  if (clean.includes('do you know me') || clean.includes('who am i') || clean.includes('my name') || clean.includes('my profile') || clean.includes('who is logged in')) {
     if (isAuth) {
-      return `👤 **Yes, I know you! Here are your account details:**
-
-• **User / Account:** **${userName}**
-• **Role:** **${userRole}**
-• **Estate / Location:** ${estate}
-• **Linked Learner:** **${childName}** (${childGrade} • ${childCurriculum})
-• **Current Progress:** 34 of 40 lessons completed (85% Term 1)
-
-You have full access to manage your learner's schedule, rubric scores, and Sunday print packs. How can I help you right now?`;
+      return `👤 **Yes, I know you! Here are your account details:**\n\n• **User / Account:** **${userName}**\n• **Role:** **${userRole}**\n• **Estate / Location:** ${estate}\n• **Linked Learner:** **${childName}** (${childGrade} • ${childCurriculum})\n• **Current Progress:** 34 of 40 lessons completed (85% Term 1)\n\nYou have full access to manage your learner's schedule, rubric scores, and Sunday print packs. How can I help you right now?`;
     } else {
-      return `🌐 **You are currently browsing as a Guest Visitor** (not logged in).
-
-As a guest, you can explore curriculum overviews, pricing, and tutor directories. To link your account and learner records, please **Log In** via the top navigation bar.`;
+      return `🌐 **You are currently browsing as a Guest Visitor** (not logged in).\n\nAs a guest, you can explore curriculum overviews, pricing, and tutor directories. To link your account and learner records, please **Log In** via the top navigation bar.`;
     }
   }
 
-  // 5. Capacity / Max children limit
-  if (
-    clean.includes('how many child') ||
-    clean.includes('how many kid') ||
-    clean.includes('how many learner') ||
-    clean.includes('maximum') ||
-    clean.includes('limit on child') ||
-    clean.includes('capacity') ||
-    clean.includes('multiple child') ||
-    clean.includes('how many student') ||
-    clean.includes('maximum do you need') ||
-    clean.includes('number of child')
-  ) {
-    return `👨‍👩‍👧‍👦 **There is no maximum limit on children on SomaHome!**
-
-With a single Parent Account, you can register and manage **as many learners as you have**:
-• **Multiple Grades & Curriculums:** For example, you can have one child in *Grade 1 CBC*, another in *Grade 4 CBC*, and an older sibling in *Cambridge Stage 8*.
-• **Individualized Portfolios:** Each child gets their own daily timetable, Sunday print packs, lesson checklists, and rubric scores.
-• **Transparent Term Fees:** Pricing is simply **KES 3,500 per term per learner**, payable via instant M-Pesa STK push.
-
-Would you like guidance on adding your first or additional learners?`;
+  // Dashboards
+  if (clean.includes('which dashboard') || clean.includes('what dashboard') || clean.includes('dashboards are present') || clean.includes('dashboards exist')) {
+    return `🖥️ **SomaHome features 5 specialized, role-based dashboards:**\n\n1️⃣ **👨‍👩‍👧 Parent Dashboard:** Multi-child overview, term progress, Sunday pack downloads, and report cards.\n2️⃣ **🎒 Student OS & Daily Hub:** Interactive timetable, quizzes, scratchpad, and worksheet submission.\n3️⃣ **👩‍🏫 Tutor & Facilitator Portal:** Rubric grading (EE/ME/AE/BE), session scheduling, and student feedback.\n4️⃣ **🎨 Creator & Marketplace:** Verified educators upload 12-week lesson bundles and earn royalties.\n5️⃣ **🛡️ Super Admin Control Center:** Platform intelligence, M-Pesa financial audit, and AI chat logs.\n\nYou can switch views anytime using the **Switch** button in the top navigation bar!`;
   }
 
-  // 6. Step-by-step Onboarding / 'How do I go about Soma'
-  if (
-    clean.includes('go about soma') ||
-    clean.includes('explain it to me') ||
-    clean.includes('how does soma work') ||
-    clean.includes('how does it work') ||
-    clean.includes('how do i get started') ||
-    clean.includes('how to start') ||
-    clean.includes('walk me through') ||
-    clean.includes('what is the process') ||
-    clean.includes('guide me on soma')
-  ) {
-    return `🚀 **Here is how you get started with SomaHome in 4 simple steps:**
-
-1️⃣ **Select Your Curriculum & Grade:**
-   Choose between **Kenya CBC (PP1–Grade 9)** or **British Cambridge (Stage 1–9)**.
-
-2️⃣ **Download Weekly Sunday Packs:**
-   Every Sunday, download 12-week lesson plans, printable student worksheets, and science experiment guides.
-
-3️⃣ **Track Daily Progress & Rubrics:**
-   Mark daily lessons as completed and track competency levels (**EE** - Exceeding, **ME** - Meeting, **AE** - Approaching, **BE** - Below).
-
-4️⃣ **Book Verified Home Tutors & Pods:**
-   Connect with TSC-vetted private tutors across Nairobi (Kilimani, Karen, Westlands) for 1-on-1 coaching or neighborhood pods.
-
-💡 *Term enrollment starts at KES 3,500 via M-Pesa.* Would you like to view our curriculum guides or start an enrollment?`;
-  }
-
-  // 7. Child Name & Progress Details
-  if (
-    clean.includes('child name') ||
-    clean.includes('my child') ||
-    clean.includes('my kid') ||
-    clean.includes('my learner') ||
-    clean.includes('my student') ||
-    clean.includes('who is my child') ||
-    clean.includes('learner name')
-  ) {
-    if (isAuth && childName) {
-      return `🎓 **Your Active Learner:**
-
-• **Name:** **${childName}**
-• **Grade Level:** **${childGrade}**
-• **Curriculum:** **${childCurriculum}**
-• **Status:** Active (Term 1 • 2026)
-• **Completed Lessons:** 34 of 40 lessons completed (85%)
-• **Assigned Facilitator:** Teacher Mercy (Senior CBC Facilitator)
-
-Would you like to review ${childName}'s recent rubric scores or today's schedule?`;
-    } else {
-      return `🔒 **No child is linked because you are in Guest Mode.**
-
-To link and monitor your child's progress, please **Log In** to your parent account. If you are exploring SomaHome, you can ask about our CBC & Cambridge curriculum packages!`;
-    }
-  }
-
-  // 8. General Soma Overview
-  if (
-    clean.includes('what is soma') ||
-    clean.includes('tell me about soma') ||
-    clean.includes('about somahome') ||
-    clean.includes('what is somahome') ||
-    clean.includes('what does it do')
-  ) {
-    return `🏡 **SomaHome Kenya is a complete Homeschool-in-a-Box OS & Community Platform.**
-
-• **Turnkey Daily Lesson Plans:** 12-week structured curriculum for Kenya CBC (PP1–Grade 9) and British Cambridge (Stage 1–9).
-• **Sunday Print Packs:** Downloadable weekly homework worksheets and hands-on science lab experiment guides.
-• **Assessment & Portfolios:** Automated KICD competency rubric tracking (EE/ME/AE/BE) and exportable PDF report cards.
-• **Verified Tutors & Pods:** Directory of TSC-vetted private tutors and estate learning pods across Nairobi (Kilimani, Karen, Westlands).
-
-Is there a specific grade or curriculum package you would like to explore?`;
-  }
-
-  // 9. Pricing & Fees
-  if (
-    clean === '1' ||
-    clean.includes('price') ||
-    clean.includes('cost') ||
-    clean.includes('fee') ||
-    clean.includes('mpesa') ||
-    clean.includes('m-pesa') ||
-    clean.includes('pricing') ||
-    clean.includes('term package')
-  ) {
-    return `💳 **SomaHome Transparent Pricing & M-Pesa:**
-
-• **Kenya CBC Core Package (PP1 – Grade 9):** KES 3,500 / term
-• **British Cambridge Package (Stage 1 – 9):** KES 5,000 / term
-• **Legal Concierge & KNEC Exam Registration:** KES 2,500 (one-time)
-• **Vetted Private Home Tutors:** KES 800 – 1,500 / hour
-
-💰 Instant enrollment via **M-Pesa STK Push** directly to your phone. Ready to enroll for Term 1?`;
-  }
-
-  // 10. Curriculum Comparison
-  if (
-    clean === '2' ||
-    clean.includes('cbc') ||
-    clean.includes('cambridge') ||
-    clean.includes('compare')
-  ) {
-    return `📚 **Kenya CBC vs British Cambridge Comparison:**
-
-🇰🇪 **Kenya CBC (KICD 2-6-3-3-3):**
-• Emphasizes 7 Core Competencies (Communication, Critical Thinking, Digital Literacy, etc.).
-• Assessed via continuous rubric levels: **EE** (Exceeding), **ME** (Meeting), **AE** (Approaching), **BE** (Below).
-• National milestones: KPSEA (Grade 6) and KJSEA (Grade 9).
-
-🇬🇧 **British Cambridge (Primary & Lower Secondary):**
-• Focuses on rigorous subject mastery in Math, Science, and English.
-• Standardized external Progression Tests and Checkpoint Exams at Stage 6 and Stage 9.
-
-Both curriculums are fully supported with daily lesson guides on SomaHome!`;
-  }
-
-  // 11. Student Progress & Rubrics
-  if (
-    clean === '3' ||
-    clean.includes('progress') ||
-    clean.includes('rubric') ||
-    clean.includes('how is my child doing') ||
-    clean.includes('check progress') ||
-    clean.includes('scores')
-  ) {
-    if (isAuth && childName) {
-      return `📊 **Live Academic Progress for ${childName}:**
-
-• **Term 1 Progress:** 34 of 40 lessons completed (85%)
-• **Competency Rubric Rating:** **EE (Exceeding Expectations)** in Science & Mathematics
-• **Assigned Facilitator:** Teacher Mercy (Senior CBC Facilitator)
-• **Recent Project:** Water Filtration Experiment — *Outstanding initiative and documentation*
-
-You can export the full official PDF Report Card anytime from your parent dashboard.`;
-    } else {
-      return `📊 **Sample Learner Progress Overview (Demo):**
-
-• **Sample Student:** Liam Kariuki (Grade 4 CBC)
-• **Completion:** 85% (34 of 40 lessons completed)
-• **Rubric Rating:** **Level 4: EE (Exceeding Expectations)**
-
-🔒 *To view your own child's real-time live data, please log in to your Parent account.*`;
-    }
-  }
-
-  // 12. Legal & KNEC
-  if (
-    clean === '4' ||
-    clean.includes('legal') ||
-    clean.includes('knec') ||
-    clean.includes('moe') ||
-    clean.includes('law') ||
-    clean.includes('affidavit')
-  ) {
-    return `⚖️ **Homeschool Legal Compliance in Kenya:**
-
-• **Constitutional Right:** Article 53(1)(b) of the Constitution of Kenya guarantees every child the right to basic education.
-• **National KNEC Exams:** Homeschooled candidates can register for national assessments (KPSEA, KCSE/IGCSE) at accredited private sub-county exam centers.
-• **SomaHome Legal Concierge:** We provide parent legal affidavit templates, portfolio compilation, and KNEC private candidate registration assistance.`;
-  }
-
-  // 13. Tutors & Pods
-  if (
-    clean === '5' ||
-    clean.includes('tutor') ||
-    clean.includes('pod') ||
-    clean.includes('teacher') ||
-    clean.includes('hire')
-  ) {
-    return `👩‍🏫 **TSC-Vetted Private Tutors & Learning Pods:**
-
-• **Estate Tutors in Nairobi:** Certified home educators available in Kilimani, Kileleshwa, Karen, Westlands, Lavington, and Runda.
-• **Learning Pods:** Small groups (3–6 homeschoolers) sharing a specialized tutor for science labs, French, and coding.
-• **Hourly Rates:** KES 800 – 1,500 / hr with background-checked credentials.`;
-  }
-
-  // 14. Greetings
-  if (
-    clean === 'hi' ||
-    clean === 'hello' ||
-    clean === 'hey' ||
-    clean === 'jambo' ||
-    clean === 'habari' ||
-    clean === 'mambo' ||
-    clean === 'sasa' ||
-    clean.startsWith('good morning') ||
-    clean.startsWith('good afternoon')
-  ) {
-    return `👋 Hello and welcome to **SomaHome**! Jambo ${userName}!
-
-I am your AI Homeschool Guide. How can I assist you with your homeschool curriculum, lesson plans, or learner progress today?`;
-  }
-
-  // 15. Intelligent Fallback
-  return `💡 **SomaHome AI Assistant:**
-
-I understand you are asking about: *"${raw}"*
-
-Here is how SomaHome supports you:
-• **Curriculum & Grades:** Comprehensive 12-week lesson plans for Kenya CBC (PP1–Grade 9) and British Cambridge (Stage 1–9).
-• **Learner Capacity:** You can enroll unlimited children under one parent account with separate portfolios for each.
-• **Sunday Print Packs:** Downloadable weekly homework and hands-on science experiment packs.
-• **Tutors & Exam Registration:** Direct access to vetted Nairobi tutors and KNEC private candidate guidance.
-
-Feel free to ask any specific question about your grade, lessons, or fees!`;
+  // Overview
+  return `💡 **SomaHome AI Assistant:**\n\nI understand you are asking about: *"${raw}"*\n\nHere is how SomaHome supports you:\n• **Curriculum & Grades:** Comprehensive 12-week lesson plans for Kenya CBC (PP1–Grade 9) and British Cambridge (Stage 1–9).\n• **Learner Capacity:** You can enroll unlimited children under one parent account with separate portfolios for each.\n• **Sunday Print Packs:** Downloadable weekly homework and science lab worksheets.\n• **Tutors & Exam Registration:** Direct access to vetted Nairobi tutors and KNEC private candidate guidance.\n\nFeel free to ask any specific question about your grade, lessons, or fees!`;
 };
 
 export const generateClientBotResponse = generateLocalAIResponse;
