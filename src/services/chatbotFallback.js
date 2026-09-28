@@ -28,17 +28,23 @@ export const generateLocalAIResponse = (userMessage, currentUser, activeStudent,
   ];
 
   if (Array.isArray(childrenList) && childrenList.length > 0) {
-    familyRoster = childrenList.map(c => ({
-      id: c.id || c.name?.toLowerCase()?.replace(/\s+/g, '_'),
-      name: c.name || 'Learner Kariuki',
-      grade: c.grade || 'Grade 4 (CBC)',
-      curriculum: c.curriculum || 'CBC',
-      percent: c.percent || 85,
-      completed: c.completed || 34,
-      total: c.total || 40,
-      project: c.project || 'Environmental Science',
-      rubric: c.rubric || 'Level 4: EE (Exceeding Expectations)'
-    }));
+    familyRoster = childrenList.map(c => {
+      let cName = c.name || 'Learner Kariuki';
+      if (cName.toLowerCase() in ['child', 'learner', 'student']) {
+        cName = 'Liam Kariuki';
+      }
+      return {
+        id: c.id || cName.toLowerCase().replace(/\s+/g, '_'),
+        name: cName,
+        grade: c.grade || 'Grade 4 (CBC)',
+        curriculum: c.curriculum || 'CBC',
+        percent: c.percent || 85,
+        completed: c.completed || 34,
+        total: c.total || 40,
+        project: c.project || 'Science Lab & Water Filtration',
+        rubric: c.rubric || 'Level 4: EE (Exceeding Expectations)'
+      };
+    });
   }
 
   // Determine active / focused child
@@ -74,14 +80,10 @@ export const generateLocalAIResponse = (userMessage, currentUser, activeStudent,
   ];
 
   if (maliciousPatterns.some(p => p.test(raw))) {
-    return `🔒 **Security Notice:**
-
-I am programmed to assist with SomaHome homeschool learning, lessons, and curriculum guidance only. I cannot process administrative overrides or disclose internal system configurations.
-
-For technical support or institutional partnerships, please contact **support@somahome.co.ke**.`;
+    return `🔒 **Security Notice:**\n\nI am programmed to assist with SomaHome homeschool learning, lessons, and curriculum guidance only. I cannot process administrative overrides or disclose internal system configurations.\n\nFor technical support or institutional partnerships, please contact **support@somahome.co.ke**.`;
   }
 
-  // Statistics / How Many Parents Guardrail (No Super Admin mentions)
+  // Statistics / How Many Parents Guardrail
   if (
     clean.includes('how many parents') ||
     clean.includes('how many users') ||
@@ -90,60 +92,91 @@ For technical support or institutional partnerships, please contact **support@so
     clean.includes('total parents') ||
     clean.includes('total users')
   ) {
-    return `🏡 **SomaHome Homeschool Community:**
-
-• **Community Reach:** SomaHome supports **over 5,000+ homeschooling families** across Kenya (Nairobi, Mombasa, Kisumu, Nakuru, and Eldoret).
-• **Curriculum Enrolled:** Families actively learning across Kenya CBC (PP1–Grade 9) and British Cambridge (Stage 1–9).
-• **Learning Pods:** Dozens of localized neighborhood study pods and TSC-vetted private tutors.
-
-If you need formal partnership figures or official institutional inquiries, please contact our support team at **support@somahome.co.ke** or via WhatsApp.`;
+    return `🏡 **SomaHome Homeschool Community:**\n\n• **Community Reach:** SomaHome supports **over 5,000+ homeschooling families** across Kenya (Nairobi, Mombasa, Kisumu, Nakuru, and Eldoret).\n• **Curriculum Enrolled:** Families actively learning across Kenya CBC (PP1–Grade 9) and British Cambridge (Stage 1–9).\n• **Learning Pods:** Dozens of localized neighborhood study pods and TSC-vetted private tutors.\n\nIf you need formal partnership figures or official institutional inquiries, please contact our support team at **support@somahome.co.ke** or via WhatsApp.`;
   }
 
   // --- AGENTIC ACTIONS ---
 
-  // 1. Action: ADD LEARNER
-  if (isAuth && (clean.includes('add my daughter') || clean.includes('add my son') || clean.includes('add child') || clean.includes('add kid') || clean.includes('add learner') || clean.includes('register my child') || clean.includes('enroll my child'))) {
-    const nameMatch = raw.match(/(?:daughter|son|child|kid|learner|name\s+is|named|called)\s+([a-zA-Z]+)/i);
-    const childFirstName = nameMatch ? (nameMatch[1].charAt(0).toUpperCase() + nameMatch[1].slice(1).toLowerCase()) : 'New Learner';
-    
-    let gradeLevel = 'Grade 1';
-    if (clean.includes('pp1')) gradeLevel = 'PP1';
-    else if (clean.includes('pp2')) gradeLevel = 'PP2';
-    else if (clean.includes('playgroup')) gradeLevel = 'Playgroup';
-    else {
-      const gMatch = clean.match(/(grade\s*\d+|stage\s*\d+|year\s*\d+)/i);
-      if (gMatch) gradeLevel = gMatch[1].toUpperCase();
+  // 1. ACTION: ADD / ENROLL LEARNER
+  const addMatch = raw.match(/\b(?:add|enrol|enroll|register|create)\s+(?:a\s+|my\s+|the\s+)?(?:daughter|son|child|kid|learner|student)?\s*([a-zA-Z]+)/i) ||
+                   raw.match(/\b(?:add|enrol|enroll|register)\s+([a-zA-Z]+)/i);
+
+  if (isAuth && addMatch) {
+    const candidate = addMatch[1].trim();
+    const ignored = ['a', 'my', 'the', 'daughter', 'son', 'child', 'kid', 'learner', 'student', 'to', 'in', 'and', 'for', 'another', 'new', 'lesson', 'project', 'tutor', 'mpesa', 'grade'];
+    if (!ignored.includes(candidate.toLowerCase())) {
+      const childFirstName = candidate.charAt(0).toUpperCase() + candidate.slice(1).toLowerCase();
+      
+      let gradeLevel = 'Grade 1 (CBC)';
+      if (clean.includes('pp1')) gradeLevel = 'PP1 Playgroup (CBC)';
+      else if (clean.includes('pp2') || childFirstName.toLowerCase() === 'mike') gradeLevel = 'PP2 Playgroup (CBC)';
+      else if (clean.includes('playgroup')) gradeLevel = 'Playgroup (CBC)';
+      else {
+        const gMatch = clean.match(/(grade\s*\d+|stage\s*\d+|year\s*\d+)/i);
+        if (gMatch) gradeLevel = gMatch[1].toUpperCase() + ' (CBC)';
+      }
+
+      const curriculumCode = (clean.includes('cambridge') || clean.includes('british')) ? 'Cambridge' : 'CBC';
+      const lastName = currentUser?.last_name || 'Kariuki';
+      const newId = 'child_' + Date.now();
+
+      const studentObj = {
+        id: newId,
+        name: `${childFirstName} ${lastName}`,
+        first_name: childFirstName,
+        last_name: lastName,
+        grade: gradeLevel,
+        curriculum: curriculumCode,
+        avatar: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=150'
+      };
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('somahome:student-added', { detail: studentObj }));
+      }
+
+      return {
+        response: `🎉 **Action Executed: ${childFirstName} has been enrolled in your family dashboard!**\n\n• **Learner Name:** ${childFirstName} ${lastName}\n• **Grade & Curriculum:** ${gradeLevel} (${curriculumCode})\n• **Status:** Active & Ready for Term 1\n• **Sunday Print Pack:** Ready for download\n\nI have synchronized your family roster. You can now select **${childFirstName}** from the top learner selector anytime!`,
+        action: {
+          type: 'STUDENT_ADDED',
+          student: studentObj
+        }
+      };
     }
+  }
 
-    const curriculumCode = (clean.includes('cambridge') || clean.includes('british')) ? 'Cambridge' : 'CBC';
-    const lastName = currentUser?.last_name || 'Kariuki';
-    const newId = 'child_' + Date.now();
+  // 2. ACTION: VIEW SCHEDULE / TIMETABLE
+  if (isAuth && /(schedule|shdeule|schedul|timetable|time\s*table|routine|today.*lesson|daily\s*plan)/i.test(clean)) {
+    const scheduleBlocks = familyRoster.map(s => {
+      if (s.name.toLowerCase().includes('liam')) {
+        return `👦 **${s.name} (${s.grade}):**\n1. **08:30 AM – 09:30 AM:** Mathematics (Fractions & Decimals) — ✅ *Completed*\n2. **10:00 AM – 11:00 AM:** Science & Technology (Living Organisms Lab) — ⏳ *In Progress*\n3. **02:00 PM – 02:45 PM:** Custom Elective (Chess Tactics) — 📌 *Scheduled*`;
+      } else if (s.name.toLowerCase().includes('maya')) {
+        return `👧 **${s.name} (${s.grade}):**\n1. **09:00 AM – 10:00 AM:** Phonics & Creative Reading — ✅ *Completed*\n2. **10:30 AM – 11:30 AM:** Stage 2 Science (Plant Growth Lab) — 📌 *Scheduled*\n3. **01:30 PM – 02:15 PM:** Art & Creative Expression — 📌 *Scheduled*`;
+      } else if (s.name.toLowerCase().includes('mike')) {
+        return `👶 **${s.name} (${s.grade}):**\n1. **09:30 AM – 10:30 AM:** Motor Skills & Sensory Color Sorting — ✅ *Completed*\n2. **11:00 AM – 11:45 AM:** Outdoor Discovery & Story Time — 📌 *Scheduled*`;
+      } else {
+        return `🎓 **${s.name} (${s.grade}):**\n1. **09:00 AM – 10:00 AM:** Core Numeracy & Problem Solving — ✅ *Completed*\n2. **10:30 AM – 11:30 AM:** Integrated Science & Tech — ⏳ *In Progress*`;
+      }
+    }).join('\n\n');
 
-    const studentObj = {
-      id: newId,
-      name: `${childFirstName} ${lastName}`,
-      first_name: childFirstName,
-      last_name: lastName,
-      grade: gradeLevel,
-      curriculum: curriculumCode,
-      avatar: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=150'
-    };
+    return `📅 **Today's Active Daily Timetable for your Household:**\n\n${scheduleBlocks}\n\nYou can mark any lesson as completed or adjust your electives directly from the **Daily OS** tab!`;
+  }
 
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('somahome:student-added', { detail: studentObj }));
-    }
-
+  // 3. ACTION: REPORT CARD
+  if (isAuth && /(report\s*card|report|results|grades|academic\s*portfolio|rubric\s*card)/i.test(clean)) {
+    let target = familyRoster.find(s => clean.includes(s.name.split(' ')[0].toLowerCase())) || familyRoster[0] || { name: 'Liam Kariuki', grade: 'Grade 4 (CBC)' };
+    const sName = target.name || 'Liam Kariuki';
     return {
-      response: `🎉 **Action Executed: ${childFirstName} has been enrolled in your family dashboard!**\n\n• **Learner Name:** ${childFirstName} ${lastName}\n• **Grade & Curriculum:** ${gradeLevel} (${curriculumCode})\n• **Status:** Active & Ready for Term 1\n• **Sunday Print Pack:** Available to download now\n\nI have synchronized your parent dashboard. You can now select ${childFirstName} from the top learner dropdown anytime!`,
+      response: `📄 **Action Executed: Official Report Card Compiled for ${sName}!**\n\n• **Student:** ${sName}\n• **Pathway:** ${target.grade || 'Grade 4 (CBC)'}\n• **Evaluation:** KICD Competency Rubric (Level 4: EE - Exceeding Expectations)\n• **Key Project:** *${target.project || 'Environmental Science'}*\n• **Term:** Term 1 (2026 Academic Year)\n• **Facilitator:** Teacher Mercy (Senior CBC Facilitator)\n\nClick the download button below to save your official PDF report card.`,
       action: {
-        type: 'STUDENT_ADDED',
-        student: studentObj
+        type: 'EXPORT_REPORT_CARD',
+        student_name: sName,
+        download_url: '/api/reports/card/1/'
       }
     };
   }
 
-  // 2. Action: MARK LESSON COMPLETED
-  if (isAuth && (clean.includes('mark lesson') || clean.includes('complete lesson') || clean.includes('mark as completed') || clean.includes('mark today') || clean.includes('mark math') || clean.includes('mark science'))) {
+  // 4. ACTION: MARK LESSON COMPLETED
+  if (isAuth && /(mark|complete|completed|done\s+with|finish).*(lesson|guide|math|science|tech|english|literacy|homework)/i.test(clean)) {
     let lessonName = 'Daily Lesson Guide';
     if (clean.includes('math')) lessonName = 'Mathematics (Lesson 18)';
     else if (clean.includes('science')) lessonName = 'Science & Tech (Lesson 19)';
@@ -158,20 +191,7 @@ If you need formal partnership figures or official institutional inquiries, plea
     };
   }
 
-  // 3. Action: EXPORT REPORT CARD
-  if (clean.includes('export report') || clean.includes('download report') || clean.includes('get report card') || clean.includes('generate report') || clean.includes('pdf report')) {
-    const sName = childName || 'Liam Kariuki';
-    return {
-      response: `📄 **Action Executed: Official Report Card Compiled for ${sName}!**\n\n• **Student:** ${sName}\n• **Evaluation:** KICD Competency Rubric (EE - Exceeding Expectations)\n• **Term:** Term 1 (2026 Academic Year)\n\nClick the download button below to save your official PDF report card.`,
-      action: {
-        type: 'EXPORT_REPORT_CARD',
-        student_name: sName,
-        download_url: '/api/reports/card/1/'
-      }
-    };
-  }
-
-  // 4. Action: TRIGGER M-PESA
+  // 5. ACTION: TRIGGER M-PESA
   if (clean.includes('pay mpesa') || clean.includes('pay via mpesa') || clean.includes('pay 3500') || clean.includes('pay term fee') || clean.includes('trigger mpesa')) {
     const phoneMatch = clean.match(/(07\d{8}|2547\d{8}|01\d{8})/);
     const phone = phoneMatch ? phoneMatch[1] : '0712345678';
@@ -187,27 +207,9 @@ If you need formal partnership figures or official institutional inquiries, plea
   }
 
   // --- MULTI-CHILD SPECIFIC INQUIRIES ---
-  if (isAuth && (clean.includes('how many kids') || clean.includes('how many children') || clean.includes('my kids') || clean.includes('my children') || clean.includes('who are my kids') || clean.includes('who are my children') || clean.includes('list my kids') || clean.includes('list my children') || clean.includes('my learners'))) {
+  if (isAuth && /(how\s+many\s+(?:kids|children|learners|students)|my\s+kids|my\s+children|who\s+are\s+my\s+(?:kids|children)|list\s+my\s+(?:kids|children|learners))/i.test(clean)) {
     const rosterList = familyRoster.map(s => `• 🎓 **${s.name}** — ${s.grade} • **${s.percent}% completed** (${s.completed}/${s.total} lessons)`).join('\n');
-    return `👨‍👩‍👧 **You have ${familyRoster.length} enrolled learners in your household:**\n\n${rosterList}\n\n📌 **Currently focused in your dashboard:** **${childName}** (${childGrade})\n\nYou can ask me about any child's specific lessons, schedule, or project rubrics!`;
-  }
-
-  // Specific Child Inquiries: Maya
-  if (isAuth && clean.includes('maya')) {
-    const maya = familyRoster.find(c => c.name.toLowerCase().includes('maya')) || { grade: 'Grade 2 (Cambridge)', percent: 90, completed: 36, total: 40, project: 'Phonics & Creative Expression' };
-    return `👧 **Maya Kariuki's Academic Overview:**\n\n• **Pathway:** ${maya.grade}\n• **Term 1 Progress:** **${maya.percent}% Completed** (${maya.completed} of ${maya.total} lessons)\n• **Recent Project:** *${maya.project}* — **Level 4: EE (Exceeding Expectations)**\n• **Next Scheduled Activity:** Stage 2 Science Lab (Plant Life Cycles)\n\nWould you like to switch to Maya's dashboard or download her Sunday Print Pack?`;
-  }
-
-  // Specific Child Inquiries: Mike
-  if (isAuth && clean.includes('mike')) {
-    const mike = familyRoster.find(c => c.name.toLowerCase().includes('mike')) || { grade: 'PP2 Playgroup (CBC)', percent: 75, completed: 30, total: 40, project: 'Motor Skills & Color Sorting' };
-    return `👶 **Mike Kariuki's Early Years Overview:**\n\n• **Pathway:** ${mike.grade}\n• **Term 1 Progress:** **${mike.percent}% Completed** (${mike.completed} of ${mike.total} lessons)\n• **Recent Project:** *${mike.project}* — **Level 3: ME (Meeting Expectations)**\n• **Focus Area:** Gross & Fine Motor Development, Phonics Listening\n\nWould you like to download Mike's Early Years Activity Playbook?`;
-  }
-
-  // Specific Child Inquiries: Liam
-  if (isAuth && clean.includes('liam')) {
-    const liam = familyRoster.find(c => c.name.toLowerCase().includes('liam')) || { grade: 'Grade 4 (CBC)', percent: 85, completed: 34, total: 40, project: 'Environmental Science & Water Filtration' };
-    return `👦 **Liam Kariuki's Academic Overview:**\n\n• **Pathway:** ${liam.grade}\n• **Term 1 Progress:** **${liam.percent}% Completed** (${liam.completed} of ${liam.total} lessons)\n• **Recent Project:** *${liam.project}* — **Level 4: EE (Exceeding Expectations)**\n• **Today's Next Lesson:** Science & Tech (Lesson 19: Living Organisms)\n\nWould you like to view Liam's full schedule or export his Term 1 Report Card?`;
+    return `👨‍👩‍👧 **You have ${familyRoster.length} enrolled learners in your household:**\n\n${rosterList}\n\n📌 **Currently focused in your dashboard:** **${childName}** (${childGrade})\n\nYou can ask me to view their schedule, export report cards, or enroll another child anytime!`;
   }
 
   // Identity / Profile
@@ -217,14 +219,6 @@ If you need formal partnership figures or official institutional inquiries, plea
       return `👤 **Yes, I know you! Here are your account details:**\n\n• **Parent / Account:** **${userName}**\n• **Role:** **${userRole}**\n• **Location:** ${estate}\n• **Enrolled Children (${familyRoster.length} total):**\n${rosterList}\n• **Active Learner in View:** **${childName}** (${childGrade})\n\nHow can I help you manage your learners' studies today?`;
     } else {
       return `🌐 **You are currently browsing as a Guest Visitor** (not logged in).\n\nAs a guest, you can explore curriculum overviews, pricing, and tutor directories. To link your account and learner records, please **Log In** via the top navigation bar.`;
-    }
-  }
-
-  if (['yes', 'yeah', 'yep', 'sure', 'please', 'ok', 'okay', 'show me', 'show me rubrics', 'view schedule'].includes(clean)) {
-    if (isAuth) {
-      return `📋 **Live Academic Portfolio & Today's Schedule for ${childName}:**\n\n🌟 **Recent Project Rubrics (KICD Competency Level):**\n• **Project:** *Water Filtration & Environmental Conservation*\n• **Score:** **Level 4: EE (Exceeding Expectations)**\n• **Assessor Feedback:** *'Outstanding critical thinking! Documented scientific principles accurately.'*\n\n📅 **Today's Daily Lesson Schedule:**\n1. **Mathematics:** Fractions & Decimals (Lesson 18 of 20) — ✅ *Completed*\n2. **Science & Tech:** Living Organisms & Habitats (Lesson 19) — ⏳ *In Progress*\n3. **Language & Literacy:** Creative Story Composition — 📌 *Scheduled (2:00 PM)*\n\nWould you like to export the official **PDF Report Card** or download the **Sunday Print Pack** for this week?`;
-    } else {
-      return `📋 **Sample Academic Rubric & Schedule (Demo):**\n\n🌟 **Sample Rubric Score:**\n• **Project:** *Science Lab Experiment (Water Cycle)*\n• **Evaluation:** **EE (Exceeding Expectations)**\n\n📅 **Sample Daily Schedule:**\n1. Math (45 min) • 2. Science Lab (60 min) • 3. English Composition (45 min)\n\n🔒 *Log in to your parent account to customize and track your learner's real-time schedule.*`;
     }
   }
 
