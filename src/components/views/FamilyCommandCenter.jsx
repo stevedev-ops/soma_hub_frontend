@@ -9,6 +9,7 @@ import { homeworkService, telemetryService } from '../../services/homeworkTeleme
 import StudentActivityTelemetryModal from '../../modules/parent/StudentActivityTelemetryModal';
 import UpcomingSessionsModal from '../../modules/parent/UpcomingSessionsModal';
 import ManageChildModal from '../../modules/parent/ManageChildModal';
+import VirtualClassroomModal from '../VirtualClassroomModal';
 import { Settings, Edit2, Trash2 } from 'lucide-react';
 import TutorHomeworkOverviewModal from '../../modules/parent/TutorHomeworkOverviewModal';
 
@@ -29,6 +30,7 @@ export default function FamilyCommandCenter({
   const [isHomeworkOverviewOpen, setIsHomeworkOverviewOpen] = useState(false);
   const [inspectingHw, setInspectingHw] = useState(null);
   const [selectedChildForManage, setSelectedChildForManage] = useState(null);
+  const [activeClassroomSession, setActiveClassroomSession] = useState(null);
 
   // Load telemetry and homework with live reactive sync
   const [telemetry, setTelemetry] = useState(() => telemetryService.getTelemetry(childrenList?.[0]?.name || ''));

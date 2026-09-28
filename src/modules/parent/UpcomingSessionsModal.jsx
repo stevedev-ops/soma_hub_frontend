@@ -251,24 +251,43 @@ export default function UpcomingSessionsModal({
                         Fee: <strong style={{ color: '#F8FAFC' }}>KES {session.amount ? Number(session.amount).toLocaleString() : '3,500'}</strong> (Receipt: {session.receipt || 'SKM849201'})
                       </div>
 
-                      <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
-                        {isVirtual && onJoinSession && (
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
+                        {isVirtual && (
                           <button
-                            onClick={() => onJoinSession(session)}
+                            type="button"
+                            onClick={() => onJoinSession ? onJoinSession(session) : null}
                             className="btn-primary"
                             style={{ fontSize: '0.78rem', padding: '6px 14px', background: '#10B981', color: '#022c22', fontWeight: 800 }}
                           >
                             <Video size={13} />
-                            <span>Join Classroom</span>
+                            <span>Join Live Classroom</span>
                           </button>
                         )}
                         <button
+                          type="button"
+                          onClick={() => {
+                            generateSessionIcs({
+                              title: `${session.focusSubject || 'Tuition'} with ${session.tutorName}`,
+                              description: `Live SomaHome session for ${session.studentName || 'Learner'}. Topic: ${session.focusSubject}`,
+                              location: isVirtual ? 'SomaHome Virtual Classroom' : (session.estateAddress || 'Home Visit'),
+                              durationMinutes: 60
+                            });
+                          }}
+                          className="btn-secondary"
+                          style={{ fontSize: '0.78rem', padding: '6px 10px', gap: '4px' }}
+                          title="Export to Google Calendar or Apple iCal (.ics)"
+                        >
+                          <Calendar size={12} />
+                          <span>+ Calendar</span>
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => setSelectedSessionDetail(session)}
                           title={`Confirmed with ${session.tutorName}`}
                           className="btn-secondary"
                           style={{ fontSize: '0.78rem', padding: '6px 12px' }}
                         >
-                          Details & Notes
+                          Details
                         </button>
                       </div>
                     </div>

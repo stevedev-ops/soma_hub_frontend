@@ -1,18 +1,21 @@
 import AIAssistantWidget from './components/AIAssistantWidget';
 import PwaInstallPrompt from './components/PwaInstallPrompt';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
+
+// Code-split dynamic chunks for high speed & small initial payload
+const ParentModule = lazy(() => import('./modules/parent/ParentModule'));
+const StudentModule = lazy(() => import('./modules/student/StudentModule'));
+const TutorModule = lazy(() => import('./modules/tutor/TutorModule'));
+const AdminModule = lazy(() => import('./modules/admin/AdminModule'));
+const CreatorModule = lazy(() => import('./modules/creator/CreatorModule'));
+const LoginPage = lazy(() => import('./modules/auth/LoginPage'));
+const AddChildModal = lazy(() => import('./modules/parent/AddChildModal'));
+const MpesaModal = lazy(() => import('./components/MpesaModal'));
+const SundayPrintableModal = lazy(() => import('./components/SundayPrintableModal'));
+const PublicCurriculumPreviewModal = lazy(() => import('./components/PublicCurriculumPreviewModal'));
+const VirtualClassroomModal = lazy(() => import('./components/VirtualClassroomModal'));
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Sidebar from './components/Sidebar';
-import ParentModule from './modules/parent/ParentModule';
-import StudentModule from './modules/student/StudentModule';
-import TutorModule from './modules/tutor/TutorModule';
-import AdminModule from './modules/admin/AdminModule';
-import CreatorModule from './modules/creator/CreatorModule';
-import LoginPage from './modules/auth/LoginPage';
-import AddChildModal from './modules/parent/AddChildModal';
-import MpesaModal from './components/MpesaModal';
-import SundayPrintableModal from './components/SundayPrintableModal';
-import PublicCurriculumPreviewModal from './components/PublicCurriculumPreviewModal';
 import MobileBottomNav from './components/MobileBottomNav';
 import { api } from './services/api';
 import { LogOut, Download } from 'lucide-react';
@@ -398,7 +401,14 @@ function MainApp() {
 export default function App() {
   return (
     <AuthProvider>
-      <MainApp />
+      <Suspense fallback={
+        <div style={{ minHeight: '100vh', background: '#0F172A', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ width: '44px', height: '44px', border: '3px solid rgba(0, 166, 81, 0.2)', borderTop: '3px solid #00A651', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+          <div style={{ fontSize: '0.88rem', color: '#94A3B8', fontWeight: 600, letterSpacing: '0.5px' }}>Loading SomaHome...</div>
+        </div>
+      }>
+        <MainApp />
+      </Suspense>
     </AuthProvider>
   );
 }
