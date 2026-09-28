@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { RefreshCw, Edit3, Sparkles, GraduationCap } from 'lucide-react';
+import { LogOut, RefreshCw, Edit3, Sparkles, GraduationCap } from 'lucide-react';
 import ProfileEditModal from '../profile/ProfileEditModal';
 
 export default function UserProfilePill() {
-  const { currentUser, setIsLoginModalOpen, switchAccount } = useAuth();
+  const { currentUser, setIsLoginModalOpen, switchAccount, logout } = useAuth();
   const [isEditingProfile, setIsEditingProfile] = useState(false);
 
   if (!currentUser) return null;
@@ -109,6 +109,18 @@ export default function UserProfilePill() {
             >
               <RefreshCw size={12} />
               <span style={{ fontSize: '0.68rem', fontWeight: 600 }}>Switch</span>
+            </button>
+
+            <button
+              onClick={logout}
+              title="Log Out"
+              style={{
+                background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '6px',
+                color: '#F87171', padding: '6px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'
+              }}
+            >
+              <LogOut size={12} />
+              <span style={{ fontSize: '0.68rem', fontWeight: 600 }}>Log Out</span>
             </button>
           </div>
         </div>

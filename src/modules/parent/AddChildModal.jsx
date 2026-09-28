@@ -8,6 +8,7 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded }) {
   const [curriculum, setCurriculum] = useState('CBC');
   const [grade, setGrade] = useState('Grade 4 (CBC)');
   const [dob, setDob] = useState('2017-06-15');
+  const [pin, setPin] = useState('1234');
   const [learningFocus, setLearningFocus] = useState('STEM & Hands-on Inquiry');
   const [avatar, setAvatar] = useState('https://images.unsplash.com/photo-1543332164-6e82f355badc?w=120&auto=format&fit=crop&q=80');
   const [isSuccess, setIsSuccess] = useState(false);
@@ -29,6 +30,7 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded }) {
       curriculum,
       grade,
       dob,
+      pin,
       learningFocus,
       avatar
     };
@@ -256,6 +258,26 @@ export default function AddChildModal({ isOpen, onClose, onChildAdded }) {
                   )}
                 </select>
               </div>
+            </div>
+
+                        {/* 4-Digit Learner PIN */}
+            <div style={{ marginBottom: '14px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700 }}>
+                  4-Digit Tablet PIN Code:
+                </label>
+                <span style={{ fontSize: '0.7rem', color: '#38BDF8' }}>Used by child to log in</span>
+              </div>
+              <input
+                type="text"
+                maxLength={6}
+                value={pin}
+                onChange={(e) => setPin(e.target.value)}
+                placeholder="1234"
+                className="custom-select"
+                style={{ width: '100%', letterSpacing: '4px', fontWeight: 800, textAlign: 'center' }}
+                required
+              />
             </div>
 
             {/* Date of Birth */}

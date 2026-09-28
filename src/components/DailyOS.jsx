@@ -770,12 +770,14 @@ https://somahome.ke/worksheets/printable_pack.pdf`;
       )}
 
       {/* Auto-Marker Modal */}
-      <WorksheetMarkerModal
-        isOpen={isMarkerOpen}
-        onClose={() => setIsMarkerOpen(false)}
-        worksheetName={activeLesson.worksheet_name}
-        subject={activeLesson.subject}
-      />
+      {isMarkerOpen && (
+        <WorksheetMarkerModal
+          isOpen={isMarkerOpen}
+          onClose={() => setIsMarkerOpen(false)}
+          worksheetName={activeLesson.worksheet_name}
+          subject={activeLesson.subject}
+        />
+      )}
     </div>
   );
 }

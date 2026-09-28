@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import UserProfilePill from '../modules/auth/UserProfilePill';
 import AddChildModal from '../modules/parent/AddChildModal';
-import { GraduationCap, Eye,
+import { Bot, GraduationCap, Eye,
   Calendar, ShoppingBag, Sparkles, Award, Users, Printer,
   BookOpen, CheckSquare, Palette, Compass, Video, UserCheck, BarChart3,
   LogIn, Scale, MessageSquare, ListChecks, ChevronRight, Plus, LayoutDashboard, Clock, Send, Library, Zap, DollarSign, Share2
@@ -79,6 +79,7 @@ export default function Sidebar({
       items: [
         { id: 'curriculum_library', label: 'Universal Curriculum Engine', icon: BookOpen, badge: 'Catalog' },
         { id: 'admin_hq', label: 'Platform Operations HQ', icon: BarChart3, badge: 'Metrics' },
+        { id: 'ai_logs', label: 'AI Chat & Intelligence', icon: Bot, badge: 'Super Admin' },
         { id: 'marketplace', label: 'Tutors & Pods Directory', icon: Users, badge: 'Manage' },
       ]
     }

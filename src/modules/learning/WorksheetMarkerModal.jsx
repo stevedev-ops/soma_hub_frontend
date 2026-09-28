@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { CheckCircle2, UploadCloud, X, Award, FileText, Check, AlertCircle } from 'lucide-react';
 
-export default function WorksheetMarkerModal({ worksheetName, onClose, onGraded }) {
+export default function WorksheetMarkerModal({ isOpen = true, worksheetName, onClose, onGraded }) {
   const [submissionType, setSubmissionType] = useState('answers'); // 'answers' or 'photo'
   const [q1, setQ1] = useState('');
   const [q2, setQ2] = useState('');
@@ -9,6 +9,19 @@ export default function WorksheetMarkerModal({ worksheetName, onClose, onGraded 
   const [isGrading, setIsGrading] = useState(false);
   const [attachedPhotoName, setAttachedPhotoName] = useState(null);
   const [result, setResult] = useState(null);
+
+  // Close on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && onClose) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
+  if (!isOpen) return null;
 
   // Correct answer scheme for Grade 4 Fractions Worksheet #1
   const checkAnswers = (e) => {
@@ -64,20 +77,35 @@ export default function WorksheetMarkerModal({ worksheetName, onClose, onGraded 
   };
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '16px'
-    }}>
-      <div className="glass-panel" style={{
-        maxWidth: '620px', width: '100%', maxHeight: '90vh', overflowY: 'auto',
-        background: '#0F172A', borderRadius: '24px', border: '1px solid rgba(0,166,81,0.5)',
-        padding: '32px', position: 'relative', boxShadow: '0 25px 60px rgba(0,0,0,0.8)'
-      }}>
+    <div 
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '16px'
+      }}
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        className="glass-panel" 
+        style={{
+          maxWidth: '620px', width: '100%', maxHeight: '90vh', overflowY: 'auto',
+          background: '#0F172A', borderRadius: '24px', border: '1px solid rgba(0,166,81,0.5)',
+          padding: '32px', position: 'relative', boxShadow: '0 25px 60px rgba(0,0,0,0.8)'
+        }}
+      >
+        {/* Prominent Close Button */}
         <button
           onClick={onClose}
-          style={{ position: 'absolute', top: '20px', right: '20px', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+          title="Close / Cancel (Esc)"
+          style={{ 
+            position: 'absolute', top: '20px', right: '20px', 
+            background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', 
+            color: '#F8FAFC', borderRadius: '50%', width: '36px', height: '36px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
         >
-          <X size={20} />
+          <X size={18} />
         </button>
 
         {/* Title */}
@@ -114,7 +142,7 @@ export default function WorksheetMarkerModal({ worksheetName, onClose, onGraded 
                 {result.rubric === 'EE' ? 'Level 4: Exceeding Expectations (EE)' : 'Level 3: Meeting Expectations (ME)'}
               </span>
               <div style={{ fontSize: '0.78rem', color: '#10B981', marginTop: '10px' }}>
-                ✓ Score recorded into Liam's official CBC Term 1 Assessment Record!
+                ? Score recorded into Liam's official CBC Term 1 Assessment Record!
               </div>
             </div>
 
@@ -128,7 +156,7 @@ export default function WorksheetMarkerModal({ worksheetName, onClose, onGraded 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <strong style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>{f.q}</strong>
                     <span style={{ fontSize: '0.78rem', fontWeight: 700, color: f.isCorrect ? '#10B981' : '#EF4444' }}>
-                      {f.isCorrect ? '✓ Correct (+1)' : '✗ Incorrect'}
+                      {f.isCorrect ? '? Correct (+1)' : '? Incorrect'}
                     </span>
                   </div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
@@ -138,9 +166,15 @@ export default function WorksheetMarkerModal({ worksheetName, onClose, onGraded 
               ))}
             </div>
 
-            <button onClick={onClose} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-              Done & Return to Lessons
-            </button>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button 
+                onClick={onClose} 
+                className="btn-primary" 
+                style={{ flex: 1, justifyContent: 'center', padding: '12px' }}
+              >
+                Done & Return to Lessons
+              </button>
+            </div>
           </div>
         ) : (
           /* Form Input */
@@ -216,13 +250,28 @@ export default function WorksheetMarkerModal({ worksheetName, onClose, onGraded 
               />
               <UploadCloud size={20} color="#34D399" style={{ margin: '0 auto 4px' }} />
               <div style={{ fontSize: '0.78rem', color: attachedPhotoName ? '#34D399' : 'var(--text-secondary)', fontWeight: attachedPhotoName ? 700 : 400 }}>
-                {attachedPhotoName ? `✅ Attached: ${attachedPhotoName} (Saved to CBC Evidence)` : 'Optional: Click to attach photo of physical paper page for teacher portfolio review'}
+                {attachedPhotoName ? `? Attached: ${attachedPhotoName} (Saved to CBC Evidence)` : 'Optional: Click to attach photo of physical paper page for teacher portfolio review'}
               </div>
             </label>
 
-            <button type="submit" disabled={isGrading} className="btn-primary" style={{ justifyContent: 'center', padding: '12px' }}>
-              {isGrading ? 'Marking Against KICD Answer Key...' : 'Submit Answers for Auto-Marking'}
-            </button>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button 
+                type="button" 
+                onClick={onClose} 
+                className="btn-secondary" 
+                style={{ padding: '12px 20px', justifyContent: 'center' }}
+              >
+                Cancel
+              </button>
+              <button 
+                type="submit" 
+                disabled={isGrading} 
+                className="btn-primary" 
+                style={{ flex: 1, justifyContent: 'center', padding: '12px' }}
+              >
+                {isGrading ? 'Marking Against KICD Answer Key...' : 'Submit Answers for Auto-Marking'}
+              </button>
+            </div>
 
           </form>
         )}
