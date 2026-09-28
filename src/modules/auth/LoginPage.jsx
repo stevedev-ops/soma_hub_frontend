@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
+import { ALL_COUNTIES, getEstatesForCounty } from '../../services/kenyaCountiesAndEstates';
 import { 
   Lock, Smartphone, UserCheck, Users, ShieldCheck, X, Sparkles, 
   GraduationCap, UserPlus, LogIn, CheckCircle, KeyRound, ArrowRight, ArrowLeft, Eye, EyeOff, Download 
@@ -96,10 +97,14 @@ export default function LoginPage({ onClose }) {
     setError('');
 
     try {
+      const computedEstate = regForm.specificCourt 
+        ? `${regForm.specificCourt}, ${regForm.selectedEstate || 'Main'}, ${regForm.county || 'Nairobi'}`
+        : `${regForm.selectedEstate || 'Main'}, ${regForm.county || 'Nairobi'}`;
+
       await api.register({
         fullName: regForm.fullName,
         phone: regForm.phone,
-        estate: regForm.estate,
+        estate: computedEstate,
         role: registerRole,
         password: regForm.password || 'Pass1234!',
         childName: regForm.childName,
@@ -466,7 +471,7 @@ export default function LoginPage({ onClose }) {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-muted)', marginBottom: '3px' }}>
+                  <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-muted)', marginBottom: '3px', fontWeight: 600 }}>
                     Kenyan Phone Number:
                   </label>
                   <input
@@ -480,16 +485,54 @@ export default function LoginPage({ onClose }) {
                 </div>
 
                 <div>
+                  <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-muted)', marginBottom: '3px', fontWeight: 600 }}>
+                    County:
+                  </label>
+                  <select
+                    value={regForm.county || 'Nairobi'}
+                    onChange={(e) => {
+                      const newCounty = e.target.value;
+                      const estates = getEstatesForCounty(newCounty);
+                      setRegForm({ ...regForm, county: newCounty, selectedEstate: estates[0] || '' });
+                    }}
+                    className="custom-select"
+                    style={{ width: '100%', padding: '8px 10px', fontSize: '0.82rem', background: '#0F172A', color: '#fff', border: '1px solid var(--border-card)', borderRadius: '8px' }}
+                  >
+                    {ALL_COUNTIES.map((c) => (
+                      <option key={c} value={c}>🇰🇪 {c}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-muted)', marginBottom: '3px', fontWeight: 600 }}>
+                    Estate / Sub-County:
+                  </label>
+                  <select
+                    value={regForm.selectedEstate || (getEstatesForCounty(regForm.county || 'Nairobi')[0])}
+                    onChange={(e) => setRegForm({ ...regForm, selectedEstate: e.target.value })}
+                    className="custom-select"
+                    style={{ width: '100%', padding: '8px 10px', fontSize: '0.82rem', background: '#0F172A', color: '#fff', border: '1px solid var(--border-card)', borderRadius: '8px' }}
+                  >
+                    {getEstatesForCounty(regForm.county || 'Nairobi').map((est) => (
+                      <option key={est} value={est}>📍 {est}</option>
+                    ))}
+                    <option value="Other">📍 Other / Specific Court</option>
+                  </select>
+                </div>
+
+                <div>
                   <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-muted)', marginBottom: '3px' }}>
-                    Neighborhood / Estate:
+                    Specific Court / Gate (Optional):
                   </label>
                   <input
                     type="text"
-                    required
-                    placeholder="e.g. Kilimani, Nairobi"
-                    value={regForm.estate}
-                    onChange={(e) => setRegForm({ ...regForm, estate: e.target.value })}
-                    style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-card)', borderRadius: '8px', padding: '8px 12px', color: '#fff', fontSize: '0.85rem' }}
+                    placeholder="e.g. Clay City, Court 4"
+                    value={regForm.specificCourt || ''}
+                    onChange={(e) => setRegForm({ ...regForm, specificCourt: e.target.value })}
+                    style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-card)', borderRadius: '8px', padding: '8px 12px', color: '#fff', fontSize: '0.82rem' }}
                   />
                 </div>
               </div>
