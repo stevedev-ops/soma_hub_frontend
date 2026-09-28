@@ -14,6 +14,7 @@ import SundayPrintableModal from './components/SundayPrintableModal';
 import PublicCurriculumPreviewModal from './components/PublicCurriculumPreviewModal';
 import MobileBottomNav from './components/MobileBottomNav';
 import { api } from './services/api';
+import { LogOut } from 'lucide-react';
 import OnboardingWizard from './modules/parent/OnboardingWizard';
 import SENSettingsModal, { applySENSettings } from './modules/parent/SENSettingsModal';
 import ParentAcademy from './components/views/ParentAcademy';
@@ -203,6 +204,49 @@ function MainApp() {
       />
 
       {/* Main Content Area: Role-Based Module Rendering */}
+            {/* Mobile Sticky Top Header with User Identity & Dedicated Log Out */}
+      <header className="mobile-top-header">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '1.25rem' }}>🏡</span>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: '0.88rem', color: '#ffffff', lineHeight: 1.2 }}>SomaHome</div>
+            <div style={{ fontSize: '0.65rem', color: '#34D399', fontWeight: 600 }}>
+              {currentUser?.name || currentUser?.first_name || currentUser?.username || 'Parent'} ({currentUser?.role?.toUpperCase() || 'PARENT'})
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <button
+            onClick={() => setIsLoginModalOpen(true)}
+            className="glass-pill"
+            style={{ fontSize: '0.7rem', padding: '4px 8px', border: '1px solid rgba(255,255,255,0.15)', cursor: 'pointer' }}
+          >
+            Switch
+          </button>
+          <button
+            onClick={() => logout()}
+            style={{
+              background: 'rgba(239, 68, 68, 0.15)',
+              border: '1px solid rgba(239, 68, 68, 0.4)',
+              color: '#FCA5A5',
+              padding: '5px 10px',
+              borderRadius: '8px',
+              fontSize: '0.72rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+            title="Log out of your account"
+          >
+            <LogOut size={12} />
+            <span>Log Out</span>
+          </button>
+        </div>
+      </header>
+
       <main className="app-main">
         {currentUser?.role === 'parent' && (
           <ParentModule
@@ -261,7 +305,7 @@ function MainApp() {
           />
         )}
 
-        <footer style={{ textAlign: 'center', marginTop: '60px', color: 'var(--text-muted)', fontSize: '0.8rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '20px' }}>
+        <footer style={{ textAlign: 'center', marginTop: '24px', color: 'var(--text-muted)', fontSize: '0.8rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '20px' }}>
           SomaHome Kenya • Modular Turnkey Homeschool-in-a-Box & Community Platform • Aligned with KICD & Cambridge Syllabi
         </footer>
       </main>

@@ -187,8 +187,8 @@ export default function ReportCard({ reportData, studentName = 'Liam Kariuki', g
         </div>
 
         {/* Competencies Table */}
-        <div style={{ marginBottom: '24px', overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
+        <div style={{ marginBottom: '20px', overflowX: 'auto', WebkitOverflowScrolling: 'touch', borderRadius: '8px' }}>
+          <table style={{ width: '100%', minWidth: '540px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-card)', color: 'var(--text-muted)' }}>
                 <th style={{ padding: '10px 12px' }}>Learning Area / Subject</th>

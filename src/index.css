@@ -384,3 +384,36 @@ h1, h2, h3, h4, h5, h6 {
     padding-bottom: 75px !important;
   }
 }
+
+
+.mobile-top-header {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-top-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    background: rgba(11, 19, 43, 0.95);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(0, 166, 81, 0.25);
+    position: sticky;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 999;
+  }
+
+  .app-main {
+    padding: 12px 12px 85px 12px !important;
+    min-height: auto !important;
+  }
+
+  .app-main footer {
+    margin-top: 20px !important;
+    padding: 12px 0 !important;
+    font-size: 0.72rem !important;
+  }
+}
