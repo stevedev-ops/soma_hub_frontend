@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, Send, Bot, User, Sparkles, RefreshCw,
-  WifiOff, MessageCircle
+  WifiOff, MessageCircle, Mic, MicOff, Volume2, VolumeX
 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -226,6 +226,77 @@ export default function AIAssistantWidget({ currentUser, activeStudent, children
   const [sessionId, setSessionId] = useState('');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const messagesEndRef = useRef(null);
+  const [isListening, setIsListening] = useState(false);
+  const [speakingMessageId, setSpeakingMessageId] = useState(null);
+  const recognitionRef = useRef(null);
+
+  // Initialize Speech Recognition
+  useEffect(() => {
+    if (typeof window !== 'undefined' && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-KE'; // Kenyan English friendly
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        setInputMessage(transcript);
+        setIsListening(false);
+      };
+
+      recognition.onerror = () => {
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current = recognition;
+    }
+  }, []);
+
+  const toggleListening = () => {
+    if (!recognitionRef.current) {
+      alert("Speech recognition is not supported in this browser. Please use Chrome or Edge.");
+      return;
+    }
+    if (isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    } else {
+      try {
+        recognitionRef.current.start();
+        setIsListening(true);
+      } catch (err) {
+        setIsListening(false);
+      }
+    }
+  };
+
+  const handleSpeakText = (messageId, textToSpeak) => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+
+    if (speakingMessageId === messageId) {
+      window.speechSynthesis.cancel();
+      setSpeakingMessageId(null);
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    // Strip markdown formatting for natural voice
+    const cleanText = textToSpeak.replace(/[#*`_|\[\]()]/g, '').replace(/\n+/g, '. ');
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.rate = 0.95;
+    utterance.pitch = 1.05;
+
+    utterance.onend = () => setSpeakingMessageId(null);
+    utterance.onerror = () => setSpeakingMessageId(null);
+
+    setSpeakingMessageId(messageId);
+    window.speechSynthesis.speak(utterance);
+  };
 
   // Sync user state from props or localStorage
   const effectiveUser = currentUser || (() => {
@@ -746,6 +817,28 @@ export default function AIAssistantWidget({ currentUser, activeStudent, children
                     <FormattedMessage text={m.text} isUser={isUser} />
                     {m.metadata?.action && <ActionCard action={m.metadata.action} />}
                   </div>
+                  {!isUser && (
+                    <button
+                      type="button"
+                      onClick={() => handleSpeakText(m.id, m.text)}
+                      title={speakingMessageId === m.id ? "Stop Speaking" : "Read Aloud"}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: speakingMessageId === m.id ? '#34D399' : '#64748b',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        fontSize: '11px',
+                        marginTop: '4px',
+                        padding: '2px 6px'
+                      }}
+                    >
+                      {speakingMessageId === m.id ? <VolumeX size={13} color="#EF4444" /> : <Volume2 size={13} />}
+                      <span>{speakingMessageId === m.id ? "Stop Voice" : "Listen (TTS)"}</span>
+                    </button>
+                  )}
                   <span style={{ fontSize: '10px', color: '#64748b', marginTop: '3px', padding: '0 4px' }}>
                     {m.time}
                   </span>
@@ -786,15 +879,35 @@ export default function AIAssistantWidget({ currentUser, activeStudent, children
                 padding: '10px 14px',
                 borderRadius: '12px',
                 background: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
+                border: isListening ? '1px solid #EF4444' : '1px solid rgba(255, 255, 255, 0.12)',
                 color: '#ffffff',
                 fontSize: '13px',
                 outline: 'none',
                 transition: 'border 0.2s ease'
               }}
               onFocus={e => e.currentTarget.style.borderColor = '#00A651'}
-              onBlur={e => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.12)'}
+              onBlur={e => e.currentTarget.style.borderColor = isListening ? '#EF4444' : 'rgba(255, 255, 255, 0.12)'}
             />
+            <button
+              type="button"
+              onClick={toggleListening}
+              title={isListening ? "Listening... click to stop" : "Speak to SomaBot"}
+              style={{
+                width: '38px',
+                height: '38px',
+                borderRadius: '12px',
+                background: isListening ? 'rgba(239, 68, 68, 0.3)' : 'rgba(255, 255, 255, 0.08)',
+                border: isListening ? '1px solid #EF4444' : '1px solid rgba(255, 255, 255, 0.12)',
+                color: isListening ? '#EF4444' : '#94A3B8',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+            </button>
             <button
               onClick={() => handleSendMessage()}
               disabled={!inputMessage.trim() || isLoading}
