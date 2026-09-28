@@ -1,4 +1,5 @@
 import AIAssistantWidget from './components/AIAssistantWidget';
+import PwaInstallPrompt from './components/PwaInstallPrompt';
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Sidebar from './components/Sidebar';
@@ -14,7 +15,7 @@ import SundayPrintableModal from './components/SundayPrintableModal';
 import PublicCurriculumPreviewModal from './components/PublicCurriculumPreviewModal';
 import MobileBottomNav from './components/MobileBottomNav';
 import { api } from './services/api';
-import { LogOut } from 'lucide-react';
+import { LogOut, Download } from 'lucide-react';
 import OnboardingWizard from './modules/parent/OnboardingWizard';
 import SENSettingsModal, { applySENSettings } from './modules/parent/SENSettingsModal';
 import ParentAcademy from './components/views/ParentAcademy';
@@ -217,6 +218,26 @@ function MainApp() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent('somahome_trigger_pwa_install'))}
+            style={{
+              background: 'rgba(0, 166, 81, 0.15)',
+              border: '1px solid rgba(0, 166, 81, 0.4)',
+              color: '#34D399',
+              padding: '5px 8px',
+              borderRadius: '8px',
+              fontSize: '0.7rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+            title="Install SomaHome App on your device"
+          >
+            <Download size={12} />
+            <span>Install App</span>
+          </button>
           <button
             onClick={() => setIsLoginModalOpen(true)}
             className="glass-pill"
