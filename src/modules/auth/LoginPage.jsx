@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import { 
   Lock, Smartphone, UserCheck, Users, ShieldCheck, X, Sparkles, 
-  GraduationCap, UserPlus, LogIn, CheckCircle, KeyRound, ArrowRight, ArrowLeft 
+  GraduationCap, UserPlus, LogIn, CheckCircle, KeyRound, ArrowRight, ArrowLeft, Eye, EyeOff, Download 
 } from 'lucide-react';
 
 export default function LoginPage({ onClose }) {
@@ -16,6 +16,10 @@ export default function LoginPage({ onClose }) {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  // Password Visibility States
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showRegPassword, setShowRegPassword] = useState(false);
+  const [showRegConfirmPassword, setShowRegConfirmPassword] = useState(false);
 
   // Learner PIN State
   const [parentLookupQuery, setParentLookupQuery] = useState('');
@@ -29,6 +33,7 @@ export default function LoginPage({ onClose }) {
     phone: '',
     estate: 'Kilimani, Nairobi',
     password: '',
+    confirmPassword: '',
     childName: '',
     childGrade: 'Grade 4 (CBC)',
     childCurriculum: 'CBC',
@@ -146,6 +151,27 @@ export default function LoginPage({ onClose }) {
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', margin: '4px 0 0 0' }}>
             Turnkey Homeschool-in-a-Box &amp; Micro-Pod Network
           </p>
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('somahome_trigger_pwa_install'))}
+            style={{
+              marginTop: '10px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: 'rgba(0, 166, 81, 0.15)',
+              border: '1px solid rgba(0, 166, 81, 0.4)',
+              color: '#34D399',
+              padding: '4px 12px',
+              borderRadius: '20px',
+              fontSize: '0.74rem',
+              fontWeight: 700,
+              cursor: 'pointer'
+            }}
+          >
+            <Download size={13} />
+            <span>Install App on Device 📲</span>
+          </button>
         </div>
 
         {/* 3-WAY TAB SWITCHER */}
@@ -218,14 +244,24 @@ export default function LoginPage({ onClose }) {
                 <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '5px', fontWeight: 600 }}>
                   Account Password:
                 </label>
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••••••"
-                  style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-card)', borderRadius: '10px', padding: '10px 14px', color: '#fff', fontSize: '0.9rem' }}
-                />
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showLoginPassword ? 'text' : 'password'}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••••••"
+                    style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-card)', borderRadius: '10px', padding: '10px 42px 10px 14px', color: '#fff', fontSize: '0.9rem' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowLoginPassword(!showLoginPassword)}
+                    style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px' }}
+                    title={showLoginPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showLoginPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
 
               {error && (
@@ -523,14 +559,61 @@ export default function LoginPage({ onClose }) {
                 <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-muted)', marginBottom: '3px' }}>
                   Create Account Password:
                 </label>
-                <input
-                  type="password"
-                  required
-                  placeholder="At least 6 characters"
-                  value={regForm.password}
-                  onChange={(e) => setRegForm({ ...regForm, password: e.target.value })}
-                  style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-card)', borderRadius: '8px', padding: '8px 12px', color: '#fff', fontSize: '0.85rem' }}
-                />
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showRegPassword ? 'text' : 'password'}
+                    required
+                    placeholder="At least 6 characters"
+                    value={regForm.password}
+                    onChange={(e) => setRegForm({ ...regForm, password: e.target.value })}
+                    style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-card)', borderRadius: '8px', padding: '8px 38px 8px 12px', color: '#fff', fontSize: '0.85rem' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowRegPassword(!showRegPassword)}
+                    style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '2px' }}
+                    title={showRegPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showRegPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-muted)', marginBottom: '3px' }}>
+                  Confirm Account Password:
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showRegConfirmPassword ? 'text' : 'password'}
+                    required
+                    placeholder="Re-enter password to confirm"
+                    value={regForm.confirmPassword}
+                    onChange={(e) => setRegForm({ ...regForm, confirmPassword: e.target.value })}
+                    style={{ 
+                      width: '100%', 
+                      background: 'rgba(255,255,255,0.05)', 
+                      border: regForm.confirmPassword && regForm.confirmPassword !== regForm.password ? '1px solid #EF4444' : '1px solid var(--border-card)', 
+                      borderRadius: '8px', 
+                      padding: '8px 38px 8px 12px', 
+                      color: '#fff', 
+                      fontSize: '0.85rem' 
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowRegConfirmPassword(!showRegConfirmPassword)}
+                    style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '2px' }}
+                    title={showRegConfirmPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showRegConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+                {regForm.confirmPassword && regForm.confirmPassword !== regForm.password && (
+                  <div style={{ fontSize: '0.72rem', color: '#F87171', marginTop: '2px' }}>
+                    ⚠️ Passwords do not match yet
+                  </div>
+                )}
               </div>
 
               {error && (

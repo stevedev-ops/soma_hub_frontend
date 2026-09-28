@@ -4,10 +4,11 @@ import App from './App.jsx'
 import './index.css'
 
 // One-time automatic purge of legacy demo/mock data from client browser localStorage
-const CLEAN_VERSION = 'somahome_clean_prod_v3';
+const CLEAN_VERSION = 'somahome_clean_prod_v4';
 if (!localStorage.getItem(CLEAN_VERSION)) {
   const legacyKeys = [
     'somahome_user',
+    'somahome_client_bookings_v2',
     'somahome_parent_children_v3',
     'somahome_parent_children_v2',
     'somahome_planning_authority_v2',
@@ -23,6 +24,19 @@ if (!localStorage.getItem(CLEAN_VERSION)) {
   ];
   legacyKeys.forEach(k => localStorage.removeItem(k));
   localStorage.setItem(CLEAN_VERSION, 'true');
+}
+
+// Register Progressive Web App (PWA) Service Worker for offline support and native app installability
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then((registration) => {
+        console.log('✅ SomaHome PWA ServiceWorker registered with scope:', registration.scope);
+      })
+      .catch((err) => {
+        console.warn('⚠️ ServiceWorker registration error:', err);
+      });
+  });
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(
