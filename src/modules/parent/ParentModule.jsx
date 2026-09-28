@@ -66,6 +66,16 @@ export default function ParentModule({
           onOpenAddChild={onOpenAddChild}
           onOpenBookTutor={() => setActiveTab('marketplace')}
           onNavigateTab={(tab) => setActiveTab(tab)}
+          onUpdateChild={(updated) => {
+            if (setChildrenList) {
+              setChildrenList(prev => prev.map(c => c.id === updated.id ? updated : c));
+            }
+          }}
+          onRemoveChild={(childId) => {
+            if (setChildrenList) {
+              setChildrenList(prev => prev.filter(c => c.id !== childId));
+            }
+          }}
         />
       )}
 

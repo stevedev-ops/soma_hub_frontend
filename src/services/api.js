@@ -85,6 +85,25 @@ export const api = {
     }
   },
 
+  async updateChild(childId, data) {
+    const res = await fetch(`${API_BASE}/parent/update-child/${childId}/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error('Failed to update child profile');
+    return await res.json();
+  },
+
+  async removeChild(childId) {
+    const res = await fetch(`${API_BASE}/parent/remove-child/${childId}/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (!res.ok) throw new Error('Failed to remove child');
+    return await res.json();
+  },
+
   async register(formData) {
     const res = await fetch(`${API_BASE}/auth/register/`, {
       method: 'POST',
