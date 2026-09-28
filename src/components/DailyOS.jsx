@@ -10,12 +10,27 @@ import { planningAuthorityStore } from '../services/planningAuthorityStore';
 import VoicePlayerPill from './VoicePlayerPill';
 import { frameworkRegistry } from '../services/frameworkRegistry';
 
-export default function DailyOS({ schedule, onOpenPrintable, onOpenLab }) {
+export default function DailyOS({ schedule, onOpenPrintable, onOpenLab, studentName = 'Learner' }) {
   const [selectedDay, setSelectedDay] = useState(3);
   const [activeWeekNum, setActiveWeekNum] = useState(3);
   const [isHolidaySprint, setIsHolidaySprint] = useState(false); // Wednesday default
-  const [activeLessonId, setActiveLessonId] = useState(3);
-  const [completedLessons, setCompletedLessons] = useState({ 1: true });
+  const [activeLessonId, setActiveLessonId] = useState(1);
+  const childKey = (studentName || 'learner').toLowerCase().replace(/[^a-z0-9]/g, '_');
+  const [completedLessons, setCompletedLessons] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`somahome_completed_${childKey}`);
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(`somahome_completed_${childKey}`, JSON.stringify(completedLessons));
+    } catch (e) {}
+  }, [completedLessons, childKey]);
+
   const [isMarkerOpen, setIsMarkerOpen] = useState(false);
   const [isScheduleConfigOpen, setIsScheduleConfigOpen] = useState(false);
   const [isElectiveModalOpen, setIsElectiveModalOpen] = useState(false);
@@ -23,10 +38,10 @@ export default function DailyOS({ schedule, onOpenPrintable, onOpenLab }) {
   const [scheduleConfig, setScheduleConfig] = useState(getSavedScheduleConfig);
   
   // 3-Tier Planning Authority State
-  const [planningAuthority, setPlanningAuthority] = useState(() => planningAuthorityStore.getForChild('liam'));
+  const [planningAuthority, setPlanningAuthority] = useState(() => planningAuthorityStore.getForChild(childKey));
 
   // Custom electives state
-  const [customElectives, setCustomElectives] = useState(() => customElectivesStore.getForStudentAndDay('liam', 3));
+  const [customElectives, setCustomElectives] = useState(() => customElectivesStore.getForStudentAndDay(childKey, 3));
 
   // 25-minute timer
   const [timerSeconds, setTimerSeconds] = useState(25 * 60);
@@ -36,7 +51,7 @@ export default function DailyOS({ schedule, onOpenPrintable, onOpenLab }) {
   const [checkedMaterials, setCheckedMaterials] = useState({});
 
   // Lesson Review & Re-evaluation state
-  const [lessonRatings, setLessonRatings] = useState({ 1: 5, 2: 4 });
+  const [lessonRatings, setLessonRatings] = useState({});
   const [reEvalModalOpen, setReEvalModalOpen] = useState(false);
   const [reEvalReason, setReEvalReason] = useState('');
   const [reEvalSuccess, setReEvalSuccess] = useState(false);
@@ -49,10 +64,10 @@ export default function DailyOS({ schedule, onOpenPrintable, onOpenLab }) {
 
   useEffect(() => {
     const handleElectivesUpdate = () => {
-      setCustomElectives(customElectivesStore.getForStudentAndDay('liam', selectedDay));
+      setCustomElectives(customElectivesStore.getForStudentAndDay(childKey, selectedDay));
     };
     const handlePlanningUpdate = (e) => {
-      setPlanningAuthority(e.detail || planningAuthorityStore.getForChild('liam'));
+      setPlanningAuthority(e.detail || planningAuthorityStore.getForChild(childKey));
     };
 
     window.addEventListener('custom_electives_updated', handleElectivesUpdate);
@@ -62,7 +77,7 @@ export default function DailyOS({ schedule, onOpenPrintable, onOpenLab }) {
       window.removeEventListener('custom_electives_updated', handleElectivesUpdate);
       window.removeEventListener('planning_authority_updated', handlePlanningUpdate);
     };
-  }, [selectedDay]);
+  }, [selectedDay, childKey]);
 
   useEffect(() => {
     setCustomElectives(customElectivesStore.getForStudentAndDay('liam', selectedDay));
@@ -263,7 +278,7 @@ https://somahome.ke/worksheets/printable_pack.pdf`;
               </span>
             </div>
             <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#FFFFFF' }}>
-              {authorityMode === 'teacher' && `Delegated to ${planningAuthority.teacherName || 'Teacher Mercy Wanjiku'} (${planningAuthority.teacherTsc || 'TSC 582914'})`}
+              {authorityMode === 'teacher' && `Delegated to ${planningAuthority.teacherName ? `${planningAuthority.teacherName} (${planningAuthority.teacherTsc || 'Verified'})` : 'Assigned Specialist Tutor'}`}
               {authorityMode === 'parent' && 'Parent-Led Custom Schedule & Weakness Target Plan'}
               {authorityMode === 'system' && 'KICD Standard Auto-Pilot Syllabus (12-Week Term)'}
             </div>

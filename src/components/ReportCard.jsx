@@ -1,23 +1,34 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Award, Printer, ShieldCheck, Download, CheckCircle2, Sparkles, FileText, Users, Scale, ExternalLink, HelpCircle } from 'lucide-react';
 import { cbaRubricStore, CBA_LEVELS } from '../services/cbaRubricStore';
+import { planningAuthorityStore } from '../services/planningAuthorityStore';
 import TermReportBatchExporter from './TermReportBatchExporter';
 
 export default function ReportCard({ reportData, studentName = 'Liam Kariuki', gradeLevel = 'Grade 4 (CBC)' }) {
   const printRef = useRef();
-  const [rubricSummary, setRubricSummary] = useState(() => cbaRubricStore.calculateSummary('liam'));
+  const childKey = (studentName || 'learner').toLowerCase().replace(/[^a-z0-9]/g, '_');
+  const [rubricSummary, setRubricSummary] = useState(() => cbaRubricStore.calculateSummary(childKey));
+  const [planningAuthority, setPlanningAuthority] = useState(() => planningAuthorityStore.getForChild(childKey));
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
   const [showRecognitionGuide, setShowRecognitionGuide] = useState(false);
 
   useEffect(() => {
     const handleUpdate = () => {
-      setRubricSummary(cbaRubricStore.calculateSummary('liam'));
+      setRubricSummary(cbaRubricStore.calculateSummary(childKey));
+      setPlanningAuthority(planningAuthorityStore.getForChild(childKey));
     };
     window.addEventListener('cba_rubric_updated', handleUpdate);
-    return () => window.removeEventListener('cba_rubric_updated', handleUpdate);
-  }, []);
+    window.addEventListener('planning_authority_updated', handleUpdate);
+    return () => {
+      window.removeEventListener('cba_rubric_updated', handleUpdate);
+      window.removeEventListener('planning_authority_updated', handleUpdate);
+    };
+  }, [childKey]);
 
-  const overallObj = CBA_LEVELS[rubricSummary.overall] || CBA_LEVELS.EE;
+  const hasEvaluations = rubricSummary.evaluations && rubricSummary.evaluations.length > 0;
+  const overallObj = hasEvaluations 
+    ? (CBA_LEVELS[rubricSummary.overall] || CBA_LEVELS.ME)
+    : { code: 'Unassessed', level: '—', label: 'Pending Assessment', color: '#94A3B8', bg: 'rgba(148, 163, 184, 0.15)', borderColor: '#475569' };
 
   return (
     <div style={{ maxWidth: '960px', margin: '0 auto', padding: '10px 0' }}>
@@ -178,7 +189,7 @@ export default function ReportCard({ reportData, studentName = 'Liam Kariuki', g
           </div>
           <div>
             <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Assigned Mentor</div>
-            <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#F8FAFC' }}>Teacher Mercy (TSC Reg: 582914)</div>
+            <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#F8FAFC' }}>{planningAuthority?.teacherName ? `${planningAuthority.teacherName} (TSC: ${planningAuthority.teacherTsc || 'Verified'})` : 'Homeschool Parent Facilitator'}</div>
           </div>
           <div>
             <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Evaluation Period</div>
@@ -198,29 +209,36 @@ export default function ReportCard({ reportData, studentName = 'Liam Kariuki', g
               </tr>
             </thead>
             <tbody>
-              {[
-                { subject: 'Mathematics Activities', rating: 'EE', score: 'Level 4', remark: 'Demonstrates exceptional grasp of fractions and practical measurement.' },
-                { subject: 'Science & Technology', rating: 'EE', score: 'Level 4', remark: 'Built working home water filtration model with locally sourced materials.' },
-                { subject: 'English Language & Literacy', rating: 'ME', score: 'Level 3', remark: 'Speaks fluently, writes creative 4-paragraph descriptive essays.' },
-                { subject: 'Kiswahili Lugha na Kusoma', rating: 'ME', score: 'Level 3', remark: 'Anaelewa ngeli za Kiswahili vizuri na anashiriki katika mazungumzo.' },
-                { subject: 'Agriculture & Nutrition', rating: 'EE', score: 'Level 4', remark: 'Identifies indigenous Kenyan soil types and kitchen gardening practices.' },
-                { subject: 'Creative Arts & Music', rating: 'ME', score: 'Level 3', remark: 'Expresses rhythm and creates patterned collage art from local fabric.' }
-              ].map((comp, idx) => (
-                <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                  <td style={{ padding: '12px', fontWeight: 700, color: '#FFFFFF' }}>{comp.subject}</td>
-                  <td style={{ padding: '12px' }}>
-                    <span style={{
-                      background: comp.rating === 'EE' ? 'rgba(0,166,81,0.2)' : 'rgba(59,130,246,0.2)',
-                      color: comp.rating === 'EE' ? '#34D399' : '#60A5FA',
-                      padding: '2px 8px', borderRadius: '6px', fontWeight: 800, fontSize: '0.75rem'
-                    }}>
-                      {comp.rating}
-                    </span>
+              {hasEvaluations ? (
+                rubricSummary.evaluations.map((comp, idx) => (
+                  <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                    <td style={{ padding: '12px', fontWeight: 700, color: '#FFFFFF' }}>{comp.subject}</td>
+                    <td style={{ padding: '12px' }}>
+                      <span style={{
+                        background: comp.rating === 'EE' ? 'rgba(0,166,81,0.2)' : 'rgba(59,130,246,0.2)',
+                        color: comp.rating === 'EE' ? '#34D399' : '#60A5FA',
+                        padding: '2px 8px', borderRadius: '6px', fontWeight: 800, fontSize: '0.75rem'
+                      }}>
+                        {comp.rating}
+                      </span>
+                    </td>
+                    <td style={{ padding: '12px', color: 'var(--text-secondary)' }}>Level {comp.level || 3}</td>
+                    <td style={{ padding: '12px', color: '#CBD5E1', fontSize: '0.82rem' }}>{comp.remark}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={4} style={{ padding: '36px 20px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '1.8rem', marginBottom: '8px' }}>📝</div>
+                    <div style={{ fontWeight: 800, color: '#F8FAFC', fontSize: '1.05rem', marginBottom: '6px' }}>
+                      No Formative CBA Rubrics Evaluated Yet
+                    </div>
+                    <p style={{ margin: '0 auto', maxWidth: '460px', color: 'var(--text-secondary)', fontSize: '0.85rem', lineHeight: 1.5 }}>
+                      As <strong>{studentName}</strong> completes daily worksheets, science labs, and specialist tutor evaluations, official KICD competency rubric levels (EE, ME, AE, BE) will be marked and tabulated here in real time.
+                    </p>
                   </td>
-                  <td style={{ padding: '12px', color: 'var(--text-secondary)' }}>{comp.score}</td>
-                  <td style={{ padding: '12px', color: '#CBD5E1', fontSize: '0.82rem' }}>{comp.remark}</td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>

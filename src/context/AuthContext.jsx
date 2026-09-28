@@ -53,13 +53,34 @@ export function AuthProvider({ children }) {
     });
   };
 
+  const purgeAllLocalStorage = () => {
+    const keysToRemove = [
+      'somahome_user',
+      'somahome_token',
+      'somahome_parent_children_v3',
+      'somahome_client_bookings_v2',
+      'somahome_homework_store_v2',
+      'somahome_telemetry_store_v2',
+      'somahome_cba_rubrics_v2',
+      'somahome_parent_planning_authority',
+      'somahome_planning_authority_v2',
+      'somahome_completed_lessons',
+      'somahome_chat_session_id',
+      'somahome_bot_position',
+      'somahome_target_chat_teacher',
+      'somahome_custom_electives',
+      'somahome_lesson_ratings',
+      'somahome_re_eval_tickets'
+    ];
+    keysToRemove.forEach(k => {
+      try { localStorage.removeItem(k); } catch (e) {}
+    });
+    try { sessionStorage.clear(); } catch (e) {}
+  };
+
   const logout = () => {
     setCurrentUser(null);
-    localStorage.removeItem('somahome_user');
-    localStorage.removeItem('somahome_parent_children_v3');
-    localStorage.removeItem('somahome_chat_session_id');
-    localStorage.removeItem('somahome_bot_position');
-    try { sessionStorage.clear(); } catch (e) {}
+    purgeAllLocalStorage();
     setIsLoginModalOpen(false);
     if (typeof window !== 'undefined') {
       window.location.href = '/';
