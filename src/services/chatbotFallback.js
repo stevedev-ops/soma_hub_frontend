@@ -33,7 +33,43 @@ export const generateLocalAIResponse = (userMessage, currentUser, activeStudent)
   const childGrade = (activeStudent && typeof activeStudent === 'object' ? activeStudent.grade : null) || 'Grade 4 (CBC)';
   const childCurriculum = (activeStudent && typeof activeStudent === 'object' ? activeStudent.curriculum : null) || 'CBC';
 
-  // --- AGENTIC ACTIONS ---
+  // --- SECURITY FIREWALL & INJECTION DEFENSE ---
+  const maliciousPatterns = [
+    /(ignore|disregard|forget|override)\s+(all\s+)?(previous\s+)?(instructions|rules|prompts)/i,
+    /(system\s+prompt|developer\s+prompt|hidden\s+prompt|reveal\s+instructions)/i,
+    /(super\s*admin\s*password|admin\s*credentials|database\s*password|env\s*variables|api\s*key)/i,
+    /(select\s+.+\s+from|drop\s+table|insert\s+into|delete\s+from|exec\s*\()/i,
+    /(<script|javascript:|onerror=|onload=)/i,
+    /(sudo|cat\s+\/etc\/passwd|bash|rm\s+-rf)/i
+  ];
+
+  if (maliciousPatterns.some(p => p.test(raw))) {
+    return `🔒 **Security Notice:**
+
+I am programmed to assist with SomaHome homeschool learning, lessons, and curriculum guidance only. I cannot process administrative overrides or disclose internal system configurations.
+
+For technical support or institutional partnerships, please contact **support@somahome.co.ke**.`;
+  }
+
+  // Statistics / How Many Parents Guardrail (No Super Admin mentions)
+  if (
+    clean.includes('how many parents') ||
+    clean.includes('how many users') ||
+    clean.includes('how many families') ||
+    clean.includes('number of parents') ||
+    clean.includes('total parents') ||
+    clean.includes('total users')
+  ) {
+    return `🏡 **SomaHome Homeschool Community:**
+
+• **Community Reach:** SomaHome supports **over 5,000+ homeschooling families** across Kenya (Nairobi, Mombasa, Kisumu, Nakuru, and Eldoret).
+• **Curriculum Enrolled:** Families actively learning across Kenya CBC (PP1–Grade 9) and British Cambridge (Stage 1–9).
+• **Learning Pods:** Dozens of localized neighborhood study pods and TSC-vetted private tutors.
+
+If you need formal partnership figures or official institutional inquiries, please contact our support team at **support@somahome.co.ke** or via WhatsApp.`;
+  }
+
+    // --- AGENTIC ACTIONS ---
 
   // 1. Action: ADD LEARNER
   if (isAuth && (clean.includes('add my daughter') || clean.includes('add my son') || clean.includes('add child') || clean.includes('add kid') || clean.includes('add learner') || clean.includes('register my child') || clean.includes('enroll my child'))) {
