@@ -88,6 +88,7 @@ export default function ParentModule({
       {activeTab === 'daily' && (
         <DailyOS
           schedule={schedule}
+          studentName={currentChild?.name || 'Learner'}
           onOpenPrintable={onOpenPrintable}
           onOpenLab={() => setActiveTab('science')}
         />
@@ -160,7 +161,11 @@ export default function ParentModule({
       )}
 
       {activeTab === 'report' && (
-        <ReportCard reportData={reportData} />
+        <ReportCard 
+          reportData={reportData} 
+          studentName={currentChild?.name || 'Learner'}
+          gradeLevel={currentChild?.grade || 'Grade 4 (CBC)'}
+        />
       )}
 
       {activeTab === 'academy' && (
