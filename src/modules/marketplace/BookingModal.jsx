@@ -14,7 +14,10 @@ export default function BookingModal({ tutor, isOpen, onClose, onBookingSuccess 
   const [timeSlot, setTimeSlot] = useState('10:00 AM - 11:30 AM');
   const [sessionType, setSessionType] = useState('in_person'); // in_person or virtual
   const [studentName, setStudentName] = useState(currentUser?.role === 'parent' ? 'Liam (Grade 4 CBC)' : 'Learner');
-  const [estateAddress, setEstateAddress] = useState(currentUser?.estate || 'Kilimani, Wood Avenue Court 4B');
+  const [bookingCounty, setBookingCounty] = useState('Nairobi');
+  const [bookingEstate, setBookingEstate] = useState('Kilimani');
+  const [bookingCourt, setBookingCourt] = useState('');
+  const [estateAddress, setEstateAddress] = useState(currentUser?.estate || 'Kilimani, Nairobi');
   const [focusSubject, setFocusSubject] = useState('Grade 4 CBC Mathematics: Fractions & Decimals');
   const [parentNotes, setParentNotes] = useState('Please bring tangible fraction circles and CBC practical counters.');
   const [phone, setPhone] = useState(currentUser?.phone || '0712345678');
@@ -341,16 +344,47 @@ export default function BookingModal({ tutor, isOpen, onClose, onBookingSuccess 
               {sessionType === 'in_person' && (
                 <div>
                   <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '6px' }}>
-                    Estate & Court:
+                    Home Visit County & Estate:
                   </label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '6px' }}>
+                    <select
+                      value={bookingCounty}
+                      onChange={(e) => {
+                        const newC = e.target.value;
+                        setBookingCounty(newC);
+                        const ests = getEstatesForCounty(newC);
+                        setBookingEstate(ests[0] || '');
+                        setEstateAddress(`${ests[0] || ''}, ${newC}`);
+                      }}
+                      className="custom-select"
+                      style={{ fontSize: '0.8rem' }}
+                    >
+                      {ALL_COUNTIES.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+
+                    <select
+                      value={bookingEstate}
+                      onChange={(e) => {
+                        const newE = e.target.value;
+                        setBookingEstate(newE);
+                        setEstateAddress(bookingCourt ? `${bookingCourt}, ${newE}, ${bookingCounty}` : `${newE}, ${bookingCounty}`);
+                      }}
+                      className="custom-select"
+                      style={{ fontSize: '0.8rem' }}
+                    >
+                      {getEstatesForCounty(bookingCounty).map(est => <option key={est} value={est}>{est}</option>)}
+                    </select>
+                  </div>
                   <input
                     type="text"
-                    value={estateAddress}
-                    onChange={(e) => setEstateAddress(e.target.value)}
+                    value={bookingCourt}
+                    onChange={(e) => {
+                      setBookingCourt(e.target.value);
+                      setEstateAddress(e.target.value ? `${e.target.value}, ${bookingEstate}, ${bookingCounty}` : `${bookingEstate}, ${bookingCounty}`);
+                    }}
                     className="custom-select"
-                    style={{ width: '100%' }}
-                    placeholder="e.g. Kilimani, Wood Ave"
-                    required
+                    style={{ width: '100%', fontSize: '0.8rem' }}
+                    placeholder="Specific Court / House / Gate No. (e.g. Court 4B, Wood Ave)"
                   />
                 </div>
               )}

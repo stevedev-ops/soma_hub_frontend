@@ -281,22 +281,45 @@ export default function Marketplace({ tutors: initialTutors, pods, onNavigateTab
             </select>
           </div>
 
-          {/* Estate Dropdown */}
+          {/* County & Estate Dropdowns */}
           {activeTab !== 'my_bookings' && (
-            <div>
-              <label style={{ display: 'block', fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '4px' }}>
-                Filter by Estate:
-              </label>
-              <select
-                className="custom-select"
-                value={selectedEstate}
-                onChange={(e) => setSelectedEstate(e.target.value)}
-                style={{ minWidth: '210px' }}
-              >
-                {estates.map((est) => (
-                  <option key={est.value} value={est.value}>{est.label}</option>
-                ))}
-              </select>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '4px' }}>
+                  Filter County:
+                </label>
+                <select
+                  className="custom-select"
+                  value={selectedCounty}
+                  onChange={(e) => {
+                    setSelectedCounty(e.target.value);
+                    setSelectedEstate('ALL');
+                  }}
+                  style={{ minWidth: '150px' }}
+                >
+                  <option value="ALL">🇰🇪 All 47 Counties</option>
+                  {ALL_COUNTIES.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '4px' }}>
+                  Filter Estate:
+                </label>
+                <select
+                  className="custom-select"
+                  value={selectedEstate}
+                  onChange={(e) => setSelectedEstate(e.target.value)}
+                  style={{ minWidth: '180px' }}
+                >
+                  <option value="ALL">📍 All Estates</option>
+                  {availableEstates.map((est) => (
+                    <option key={est} value={est}>{est}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           )}
 
