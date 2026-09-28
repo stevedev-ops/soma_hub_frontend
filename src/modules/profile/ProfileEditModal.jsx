@@ -1,13 +1,29 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Camera, X, Check, Upload, User, MapPin, Phone, Sparkles, GraduationCap, CheckCircle2 } from 'lucide-react';
+import { ALL_COUNTIES, getEstatesForCounty } from '../../services/kenyaCountiesAndEstates';
 
 export default function ProfileEditModal({ onClose }) {
   const { currentUser, updateProfile } = useAuth();
 
   const [name, setName] = useState(currentUser?.name || '');
   const [phone, setPhone] = useState(currentUser?.phone_number || '');
-  const [estate, setEstate] = useState(currentUser?.estate || 'Kilimani, Nairobi');
+  const [county, setCounty] = useState(() => {
+    const raw = currentUser?.estate || 'Kilimani, Nairobi';
+    const match = ALL_COUNTIES.find(c => raw.includes(c));
+    return match || 'Nairobi';
+  });
+  const [selectedEstate, setSelectedEstate] = useState(() => {
+    const raw = currentUser?.estate || 'Kilimani, Nairobi';
+    const ests = getEstatesForCounty('Nairobi');
+    const match = ests.find(e => raw.includes(e));
+    return match || ests[0] || 'Kilimani';
+  });
+  const [specificCourt, setSpecificCourt] = useState(() => {
+    const raw = currentUser?.estate || '';
+    const parts = raw.split(',').map(s => s.trim());
+    return parts.length > 2 ? parts[0] : '';
+  });
   const [bio, setBio] = useState(currentUser?.bio || '');
   const [avatar, setAvatar] = useState(currentUser?.avatar || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=150');
   const [customAvatarUrl, setCustomAvatarUrl] = useState('');
@@ -32,10 +48,14 @@ export default function ProfileEditModal({ onClose }) {
 
   const handleSave = (e) => {
     e.preventDefault();
+    const finalEstate = specificCourt 
+      ? `${specificCourt}, ${selectedEstate}, ${county}`
+      : `${selectedEstate}, ${county}`;
+
     updateProfile({
       name,
       phone_number: phone,
-      estate,
+      estate: finalEstate,
       bio,
       avatar,
       is_dual_identity: isDualIdentity,
@@ -248,13 +268,50 @@ export default function ProfileEditModal({ onClose }) {
 
             <div>
               <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                Estate / Suburb (Nairobi)
+                County:
+              </label>
+              <select
+                value={county}
+                onChange={(e) => {
+                  const newC = e.target.value;
+                  setCounty(newC);
+                  const ests = getEstatesForCounty(newC);
+                  setSelectedEstate(ests[0] || '');
+                }}
+                className="custom-select"
+                style={{ width: '100%', background: '#0F172A', border: '1px solid var(--border-subtle)', borderRadius: '10px', padding: '10px 14px', color: '#fff', fontSize: '0.9rem' }}
+              >
+                {ALL_COUNTIES.map(c => (
+                  <option key={c} value={c}>🇰🇪 {c}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                Estate / Sub-County:
+              </label>
+              <select
+                value={selectedEstate}
+                onChange={(e) => setSelectedEstate(e.target.value)}
+                className="custom-select"
+                style={{ width: '100%', background: '#0F172A', border: '1px solid var(--border-subtle)', borderRadius: '10px', padding: '10px 14px', color: '#fff', fontSize: '0.9rem' }}
+              >
+                {getEstatesForCounty(county).map(est => (
+                  <option key={est} value={est}>📍 {est}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                Specific Court / House / Gate No. (Optional):
               </label>
               <input
                 type="text"
-                value={estate}
-                onChange={(e) => setEstate(e.target.value)}
-                required
+                value={specificCourt}
+                onChange={(e) => setSpecificCourt(e.target.value)}
+                placeholder="e.g. Court 4B, Wood Avenue"
                 style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-subtle)', borderRadius: '10px', padding: '10px 14px', color: '#fff', fontSize: '0.9rem' }}
               />
             </div>
