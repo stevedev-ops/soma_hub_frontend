@@ -103,7 +103,7 @@ export default function AIAssistantWidget({ currentUser, activeStudent, onOpenLo
       let data;
       if (currentUser) {
         const studentId = typeof activeStudent === 'object' ? activeStudent?.id : activeStudent;
-        data = await api.sendAuthChatMessage(textToSend, sessionId, studentId, currentUser.email);
+        data = await api.sendAuthChatMessage(textToSend, sessionId, activeStudent, currentUser);
       } else {
         data = await api.sendPublicChatMessage(textToSend, sessionId, 'Guest Visitor');
       }
