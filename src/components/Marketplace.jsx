@@ -7,6 +7,7 @@ import { jobVacanciesService } from '../services/jobVacanciesStore';
 import { Briefcase, MessageCircle, Send } from 'lucide-react';
 import ReviewModal from '../modules/marketplace/ReviewModal';
 import PodEscrowModal from '../modules/marketplace/PodEscrowModal';
+import { ALL_COUNTIES, getEstatesForCounty } from '../services/kenyaCountiesAndEstates';
 
 const INITIAL_BOOKINGS = [];
 
@@ -16,6 +17,7 @@ export default function Marketplace({ tutors: initialTutors, pods, onNavigateTab
   const isParent = currentUser?.role === 'parent';
 
   const [tutors, setTutors] = useState(initialTutors);
+  const [selectedCounty, setSelectedCounty] = useState('ALL');
   const [selectedEstate, setSelectedEstate] = useState('ALL');
   const [activeTab, setActiveTab] = useState(isTeacher ? 'my_bookings' : 'tutors');
   // Vacancies & Job Board State
@@ -139,22 +141,35 @@ export default function Marketplace({ tutors: initialTutors, pods, onNavigateTab
   const [selectedPodForEscrow, setSelectedPodForEscrow] = useState(null);
   const [recentReviews, setRecentReviews] = useState({});
 
-  const estates = [
-    { value: 'ALL', label: '📍 All Nairobi Estates' },
-    { value: 'Kilimani', label: 'Kilimani & Kileleshwa' },
-    { value: 'Syokimau', label: 'Syokimau & Mombasa Rd' },
-    { value: 'Karen', label: 'Karen & Langata' },
-    { value: 'Lavington', label: 'Lavington & Ngong Rd' },
-    { value: 'Runda', label: 'Runda, Gigiri & Ruaka' },
-  ];
+  const availableEstates = selectedCounty === 'ALL' 
+    ? getEstatesForCounty('Nairobi') 
+    : getEstatesForCounty(selectedCounty);
 
-  const filteredTutors = selectedEstate === 'ALL'
-    ? tutors
-    : tutors.filter((t) => t.estates_covered?.some((e) => e.toLowerCase().includes(selectedEstate.toLowerCase())));
+  const filteredTutors = tutors.filter((t) => {
+    if (selectedCounty !== 'ALL') {
+      const matchCounty = (t.estate || '').toLowerCase().includes(selectedCounty.toLowerCase()) || 
+                          t.estates_covered?.some(e => e.toLowerCase().includes(selectedCounty.toLowerCase()));
+      if (!matchCounty) return false;
+    }
+    if (selectedEstate !== 'ALL') {
+      const matchEstate = (t.estate || '').toLowerCase().includes(selectedEstate.toLowerCase()) || 
+                          t.estates_covered?.some(e => e.toLowerCase().includes(selectedEstate.toLowerCase()));
+      if (!matchEstate) return false;
+    }
+    return true;
+  });
 
-  const filteredPods = selectedEstate === 'ALL'
-    ? pods
-    : pods.filter((p) => p.estate?.toLowerCase().includes(selectedEstate.toLowerCase()));
+  const filteredPods = pods.filter((p) => {
+    if (selectedCounty !== 'ALL') {
+      const matchCounty = (p.estate || '').toLowerCase().includes(selectedCounty.toLowerCase());
+      if (!matchCounty) return false;
+    }
+    if (selectedEstate !== 'ALL') {
+      const matchEstate = (p.estate || '').toLowerCase().includes(selectedEstate.toLowerCase());
+      if (!matchEstate) return false;
+    }
+    return true;
+  });
 
   const handleBookingCreated = (newBooking) => {
     setBookings((prev) => [newBooking, ...prev]);
