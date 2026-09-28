@@ -8,7 +8,7 @@ import {
   Download, CheckCircle2, Sparkles, FileCode, Plus 
 } from 'lucide-react';
 
-export default function AdminDashboard() {
+export default function AdminDashboard({ setActiveTab }) {
   const { logout, setIsLoginModalOpen } = useAuth();
   const [tutorApplicants, setTutorApplicants] = useState([]);
   const [teachers, setTeachers] = useState([]);
