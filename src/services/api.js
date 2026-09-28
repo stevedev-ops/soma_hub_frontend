@@ -75,6 +75,16 @@ export const api = {
     return data.user;
   },
 
+  async getAdminOverview() {
+    try {
+      const res = await fetch(`${API_BASE}/admin/overview/`);
+      if (!res.ok) return null;
+      return await res.json();
+    } catch (e) {
+      return null;
+    }
+  },
+
   async register(formData) {
     const res = await fetch(`${API_BASE}/auth/register/`, {
       method: 'POST',

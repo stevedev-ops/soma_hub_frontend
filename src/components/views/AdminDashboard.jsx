@@ -42,6 +42,7 @@ export default function AdminDashboard({ setActiveTab }) {
   const [ingestStatus, setIngestStatus] = useState(null);
   const [isIngesting, setIsIngesting] = useState(false);
   const [transactions, setTransactions] = useState([]);
+  const [overviewData, setOverviewData] = useState(null);
 
   // Fetch catalog from backend API if available
   const fetchCurriculumCatalog = () => {
@@ -70,8 +71,17 @@ export default function AdminDashboard({ setActiveTab }) {
       .catch(() => null);
   };
 
+  const loadAdminOverview = () => {
+    api.getAdminOverview().then(data => {
+      if (data) setOverviewData(data);
+    }).catch(() => null);
+  };
+
   useEffect(() => {
     fetchCurriculumCatalog();
+    loadAdminOverview();
+    const interval = setInterval(loadAdminOverview, 4000);
+
     api.getTutors().then(data => {
       if (Array.isArray(data) && data.length > 0) {
         setTeachers(data.map(t => ({
@@ -89,6 +99,8 @@ export default function AdminDashboard({ setActiveTab }) {
         })));
       }
     }).catch(() => null);
+
+    return () => clearInterval(interval);
   }, []);
 
   const handleIngestCurriculum = async (e) => {
@@ -260,6 +272,7 @@ export default function AdminDashboard({ setActiveTab }) {
       <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0', flexWrap: 'wrap' }}>
         {[
           { id: 'overview', icon: '📊', label: 'Overview' },
+          { id: 'families', icon: '👶', label: 'Enrolled Learners & Families' },
           { id: 'registry', icon: '👨‍🏫', label: 'Teacher Governance' },
           { id: 'applicants', icon: '📋', label: 'Vetting & Daraja Feed' },
           { id: 'curriculum', icon: '📚', label: 'Curriculum Engine' },
@@ -295,13 +308,17 @@ export default function AdminDashboard({ setActiveTab }) {
       {/* KPI Cards Grid (Overview Tab) */}
       {adminSection === 'overview' && (
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '28px' }}>
-        <div className="glass-panel" style={{ padding: '20px' }}>
+        <div className="glass-panel" style={{ padding: '20px', cursor: 'pointer' }} onClick={() => setAdminSection('families')}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700 }}>ACTIVE STUDENTS</span>
             <Users size={18} color="#34D399" />
           </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#F8FAFC', marginTop: '6px' }}>0</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>Awaiting parent registrations</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#F8FAFC', marginTop: '6px' }}>
+            {overviewData?.total_students ?? 0}
+          </div>
+          <div style={{ fontSize: '0.75rem', color: '#34D399', marginTop: '4px' }}>
+            {overviewData?.total_parents ?? 0} Registered Families • View Registry →
+          </div>
         </div>
 
         <div className="glass-panel" style={{ padding: '20px' }}>
@@ -309,8 +326,12 @@ export default function AdminDashboard({ setActiveTab }) {
             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700 }}>M-PESA VOLUME (TERM 1)</span>
             <DollarSign size={18} color="#F59E0B" />
           </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#F8FAFC', marginTop: '6px' }}>KES 0.00</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>0 Live Daraja Transactions</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#F8FAFC', marginTop: '6px' }}>
+            KES {(overviewData?.mpesa_volume_kes || 0).toLocaleString()}
+          </div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+            {overviewData?.mpesa_successful_transactions || 0} Live Daraja Transactions
+          </div>
         </div>
 
         <div className="glass-panel" style={{ padding: '20px' }}>
@@ -318,20 +339,22 @@ export default function AdminDashboard({ setActiveTab }) {
             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700 }}>ESTATE LEARNING PODS</span>
             <TrendingUp size={18} color="#38BDF8" />
           </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#F8FAFC', marginTop: '6px' }}>0 Active</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>0 Registered Estate Pods</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#F8FAFC', marginTop: '6px' }}>
+            {overviewData?.total_pods ?? 0} Active
+          </div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>Registered Estate Pods</div>
         </div>
 
-        <div className="glass-panel" style={{ padding: '20px' }}>
+        <div className="glass-panel" style={{ padding: '20px', cursor: 'pointer' }} onClick={() => setAdminSection('registry')}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700 }}>VERIFIED TEACHERS</span>
             <ShieldCheck size={18} color="#A78BFA" />
           </div>
           <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#F8FAFC', marginTop: '6px' }}>
-            {teachers.filter((t) => t.status === 'active').length} Active
+            {overviewData?.total_teachers ?? teachers.filter((t) => t.status === 'active').length} Active
           </div>
-          <div style={{ fontSize: '0.75rem', color: teachers.some((t) => t.status === 'suspended') ? '#F87171' : '#10B981', marginTop: '4px' }}>
-            {teachers.filter((t) => t.status === 'suspended').length} Suspended/Cancelled
+          <div style={{ fontSize: '0.75rem', color: '#10B981', marginTop: '4px' }}>
+            Vetted Marketplace Facilitators
           </div>
         </div>
 
@@ -356,6 +379,76 @@ export default function AdminDashboard({ setActiveTab }) {
       </div>
       )}
 
+      {/* ENROLLED LEARNERS & FAMILIES TAB */}
+      {(adminSection === 'overview' || adminSection === 'families') && (
+      <div className="glass-panel" style={{ padding: '24px', marginBottom: '28px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+          <div>
+            <h3 style={{ fontSize: '1.2rem', margin: 0, fontWeight: 800 }}>👶 Live Enrolled Learners & Families Registry</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', margin: '3px 0 0 0' }}>
+              Real-time database records of registered homeschool learners, parent accounts, and curriculum grades
+            </p>
+          </div>
+          <span style={{ fontSize: '0.78rem', background: 'rgba(0,166,81,0.2)', color: '#34D399', padding: '4px 10px', borderRadius: '8px', fontWeight: 700 }}>
+            ● {overviewData?.total_students ?? 0} Active Students
+          </span>
+        </div>
+
+        {overviewData?.students && overviewData.students.length > 0 ? (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', minWidth: '600px', borderCollapse: 'collapse', fontSize: '0.84rem', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border-card)', color: 'var(--text-muted)' }}>
+                  <th style={{ padding: '10px' }}>Learner Name</th>
+                  <th style={{ padding: '10px' }}>Curriculum & Grade</th>
+                  <th style={{ padding: '10px' }}>Parent / Guardian</th>
+                  <th style={{ padding: '10px' }}>Phone / Username</th>
+                  <th style={{ padding: '10px' }}>Estate</th>
+                  <th style={{ padding: '10px' }}>Tablet PIN</th>
+                </tr>
+              </thead>
+              <tbody>
+                {overviewData.students.map((student) => (
+                  <tr key={student.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    <td style={{ padding: '10px', fontWeight: 800, color: '#F8FAFC' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '1.2rem' }}>👶</span>
+                        <span>{student.name}</span>
+                      </div>
+                    </td>
+                    <td style={{ padding: '10px' }}>
+                      <span style={{ background: 'rgba(56,189,248,0.15)', color: '#38BDF8', padding: '3px 8px', borderRadius: '6px', fontWeight: 700, fontSize: '0.76rem' }}>
+                        {student.grade} ({student.curriculum})
+                      </span>
+                    </td>
+                    <td style={{ padding: '10px', color: '#CBD5E1', fontWeight: 600 }}>
+                      {student.parent_name}
+                    </td>
+                    <td style={{ padding: '10px', color: '#94A3B8', fontFamily: 'monospace' }}>
+                      {student.parent_phone}
+                    </td>
+                    <td style={{ padding: '10px', color: '#CBD5E1' }}>
+                      📍 {student.estate}
+                    </td>
+                    <td style={{ padding: '10px' }}>
+                      <span style={{ background: 'rgba(245,158,11,0.15)', color: '#FBBF24', padding: '2px 6px', borderRadius: '4px', fontFamily: 'monospace', fontWeight: 700 }}>
+                        {student.pin}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div style={{ padding: '28px', textAlign: 'center', color: 'var(--text-muted)' }}>
+            <div style={{ fontSize: '1.5rem', marginBottom: '6px' }}>👶</div>
+            <div style={{ fontWeight: 700, color: '#F8FAFC', marginBottom: '2px' }}>No Enrolled Learners Yet</div>
+            <p style={{ margin: 0, fontSize: '0.8rem' }}>When parents self-register or enroll kids, their profiles and tablet PINs will populate here automatically.</p>
+          </div>
+        )}
+      </div>
+      )}
       {/* TEACHER MANAGEMENT & CANCELLATION PANEL */}
       {(adminSection === 'overview' || adminSection === 'registry') && (
       <div className="glass-panel" style={{ padding: '24px', marginBottom: '28px' }}>
