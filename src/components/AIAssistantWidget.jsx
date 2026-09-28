@@ -1,9 +1,7 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
 import { 
-  MessageSquare, X, Send, Bot, User, Sparkles, 
-  HelpCircle, CheckCircle2, ChevronDown, Minimize2, 
-  BookOpen, CreditCard, ShieldCheck, Activity, RefreshCw,
-  WifiOff, PhoneCall, ExternalLink, MessageCircle
+  X, Send, Bot, User, Sparkles, RefreshCw,
+  WifiOff, MessageCircle
 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -16,24 +14,19 @@ export default function AIAssistantWidget({ currentUser, activeStudent, onOpenLo
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const messagesEndRef = useRef(null);
 
-  // WhatsApp Support Number for Kenya
   const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '254700000000';
 
-  // Network offline/online listeners
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
-
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
 
-  // Initialize or load session
   useEffect(() => {
     let currentSession = localStorage.getItem('somahome_chat_session_id');
     if (!currentSession) {
@@ -42,7 +35,6 @@ export default function AIAssistantWidget({ currentUser, activeStudent, onOpenLo
     }
     setSessionId(currentSession);
 
-    // Initial greeting based on auth state
     if (messages.length === 0) {
       if (currentUser) {
         const userName = currentUser.first_name || currentUser.name || currentUser.username || 'Parent';
@@ -69,7 +61,6 @@ export default function AIAssistantWidget({ currentUser, activeStudent, onOpenLo
     }
   }, [currentUser]);
 
-  // Auto-scroll to bottom
   useEffect(() => {
     if (isOpen) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -91,7 +82,6 @@ export default function AIAssistantWidget({ currentUser, activeStudent, onOpenLo
     setInputMessage('');
     setIsLoading(true);
 
-    // If offline, provide immediate offline response
     if (!navigator.onLine) {
       setTimeout(() => {
         setMessages(prev => [
@@ -99,7 +89,7 @@ export default function AIAssistantWidget({ currentUser, activeStudent, onOpenLo
           {
             id: 'bot_offline_' + Date.now(),
             sender: 'BOT',
-            text: `?? **You appear to be offline.**\n\nYour inquiry has been cached. You can tap the **WhatsApp** button above to send this directly to our team via SMS / WhatsApp, or we will connect once your network resumes!`,
+            text: `?? **You appear to be offline.**\n\nYour inquiry has been cached. You can tap the **WhatsApp** button above to send this directly to our team via SMS / WhatsApp.`,
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             metadata: { offline: true }
           }
@@ -160,7 +150,6 @@ export default function AIAssistantWidget({ currentUser, activeStudent, onOpenLo
     ]);
   };
 
-  // Generate WhatsApp Handover URL with pre-filled context
   const getWhatsAppLink = () => {
     const lastUserMsg = [...messages].reverse().find(m => m.sender === 'USER')?.text || 'Homeschool Information';
     const userLabel = currentUser ? (currentUser.first_name || currentUser.username) : 'Prospective Parent';
@@ -171,43 +160,52 @@ export default function AIAssistantWidget({ currentUser, activeStudent, onOpenLo
   };
 
   const quickPrompts = currentUser ? [
-    { label: "?? Check child progress", query: "Check my student's activity, completed lessons, and project rubric scores" },
-    { label: "?? What is scheduled today?", query: "What lessons and activities are scheduled for today?" },
+    { label: "?? Child progress", query: "Check my student's activity, completed lessons, and project rubric scores" },
+    { label: "?? Today's plan", query: "What lessons and activities are scheduled for today?" },
     { label: "?? M-Pesa Term Fees", query: "How much are the term packages and how do I renew via M-Pesa?" },
-    { label: "?? KNEC & MOE Legal Info", query: "How do I register my child for KNEC assessments or Cambridge exams as a homeschooler?" }
+    { label: "?? Legal & KNEC Info", query: "How do I register my child for KNEC assessments or Cambridge exams as a homeschooler?" }
   ] : [
-    { label: "?? Term Pricing & M-Pesa", query: "How much does SomaHome cost per term and how do I pay with M-Pesa?" },
-    { label: "???? CBC Curriculum Guide", query: "How does the Kenya CBC curriculum work on SomaHome from Grade 1 to 9?" },
+    { label: "?? Pricing & M-Pesa", query: "How much does SomaHome cost per term and how do I pay with M-Pesa?" },
+    { label: "???? CBC Guide", query: "How does the Kenya CBC curriculum work on SomaHome from Grade 1 to 9?" },
     { label: "???? Cambridge Option", query: "Do you support British Cambridge curriculum and IGCSE preparation?" },
-    { label: "?? Is homeschooling legal in Kenya?", query: "Is homeschooling legal in Kenya and how does Ministry of Education compliance work?" },
-    { label: "????? Hire a Verified Tutor", query: "How do I find a private home tutor or join a learning pod in Nairobi?" }
+    { label: "?? Legality in Kenya", query: "Is homeschooling legal in Kenya and how does Ministry of Education compliance work?" },
+    { label: "????? Hire Tutors", query: "How do I find a private home tutor or join a learning pod in Nairobi?" }
   ];
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 font-sans">
+    <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 99999, fontFamily: 'var(--font-body, system-ui, sans-serif)' }}>
       {/* Closed Floating Launcher Button */}
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="group relative flex items-center gap-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-5 py-3.5 rounded-full shadow-2xl hover:shadow-emerald-500/25 transition-all duration-300 transform hover:-translate-y-1 active:translate-y-0 border border-emerald-400/30"
-          aria-label="Open AI Assistant"
+          style={{
+            background: 'linear-gradient(135deg, #00A651 0%, #059669 100%)',
+            border: '1px solid rgba(255, 255, 255, 0.25)',
+            borderRadius: '9999px',
+            padding: '10px 18px 10px 12px',
+            color: '#FFFFFF',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            cursor: 'pointer',
+            boxShadow: '0 10px 30px rgba(0, 166, 81, 0.4), 0 0 20px rgba(0, 166, 81, 0.25)',
+            transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+          }}
         >
-          <div className="relative">
-            <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white">
-              <Bot className="w-6 h-6 animate-pulse" />
-            </div>
-            <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-amber-400 border-2 border-emerald-600"></span>
-            </span>
+          <div style={{ position: 'relative', width: '38px', height: '38px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Bot size={22} color="#FFFFFF" />
+            <span style={{
+              position: 'absolute', top: '-2px', right: '-2px', width: '12px', height: '12px',
+              borderRadius: '50%', background: '#F59E0B', border: '2px solid #00A651'
+            }}></span>
           </div>
 
-          <div className="text-left hidden sm:block">
-            <div className="text-xs font-semibold uppercase tracking-wider text-emerald-100 flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-amber-300" />
+          <div style={{ textAlign: 'left' }}>
+            <div style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#D1FAE5', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Sparkles size={11} color="#FBBF24" />
               SomaBot AI
             </div>
-            <div className="text-sm font-bold text-white">
+            <div style={{ fontSize: '0.84rem', fontWeight: 800, color: '#FFFFFF', whiteSpace: 'nowrap' }}>
               {currentUser ? 'Homeschool Assistant' : 'Ask Anything ? CBC & Fees'}
             </div>
           </div>
@@ -216,89 +214,111 @@ export default function AIAssistantWidget({ currentUser, activeStudent, onOpenLo
 
       {/* Expanded Chat Box Window */}
       {isOpen && (
-        <div className="w-[380px] sm:w-[420px] h-[600px] max-h-[85vh] bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-200">
+        <div style={{
+          width: '400px',
+          maxWidth: 'calc(100vw - 32px)',
+          height: '580px',
+          maxHeight: 'calc(100vh - 48px)',
+          background: '#0B1120',
+          border: '1px solid rgba(0, 166, 81, 0.4)',
+          borderRadius: '20px',
+          boxShadow: '0 25px 60px rgba(0, 0, 0, 0.9), 0 0 30px rgba(0, 166, 81, 0.15)',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
           {/* Header */}
-          <div className="bg-gradient-to-r from-emerald-700 via-teal-700 to-slate-800 p-4 text-white flex items-center justify-between border-b border-white/10 shadow-md">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white shadow-inner">
-                <Bot className="w-6 h-6 text-emerald-200" />
+          <div style={{
+            background: 'linear-gradient(135deg, #064E3B 0%, #065F46 50%, #0F172A 100%)',
+            padding: '14px 16px',
+            borderBottom: '1px solid rgba(255,255,255,0.1)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Bot size={22} color="#A7F3D0" />
               </div>
               <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="font-bold text-base tracking-tight text-white">SomaBot AI</h3>
-                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-200 border border-emerald-300/30">
-                    {currentUser ? (currentUser.role || 'Active Learner') : 'Guest Mode'}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#FFFFFF' }}>SomaBot AI</span>
+                  <span style={{
+                    fontSize: '0.62rem', fontWeight: 800, textTransform: 'uppercase',
+                    background: 'rgba(52, 211, 153, 0.2)', color: '#34D399',
+                    padding: '2px 6px', borderRadius: '9999px', border: '1px solid rgba(52, 211, 153, 0.3)'
+                  }}>
+                    {currentUser ? (currentUser.role || 'Active Learner') : 'Guest'}
                   </span>
                 </div>
-                <p className="text-xs text-emerald-100/80 flex items-center gap-1">
-                  <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
+                <div style={{ fontSize: '0.72rem', color: '#D1FAE5', opacity: 0.85, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: isOnline ? '#34D399' : '#F59E0B' }}></span>
                   {isOnline 
-                    ? (currentUser ? `Connected as ${currentUser.first_name || currentUser.username}` : 'Instant 24/7 Self-Hosted AI')
+                    ? (currentUser ? `Connected: ${currentUser.first_name || currentUser.username}` : 'Instant 24/7 Homeschool Guide')
                     : 'Offline Mode Active'
                   }
-                </p>
+                </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-1">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               <a
                 href={getWhatsAppLink()}
                 target="_blank"
                 rel="noopener noreferrer"
                 title="Continue on WhatsApp"
-                className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-200 hover:bg-emerald-500 hover:text-white transition-all flex items-center gap-1 text-xs px-2"
+                style={{
+                  background: '#25D366', color: '#FFFFFF', borderRadius: '8px', padding: '6px 10px',
+                  display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none',
+                  fontSize: '0.72rem', fontWeight: 800, border: 'none'
+                }}
               >
-                <MessageCircle className="w-4 h-4 text-emerald-300" />
-                <span className="hidden sm:inline font-medium">WhatsApp</span>
+                <MessageCircle size={14} color="#FFFFFF" />
+                <span>WhatsApp</span>
               </a>
+
               <button
                 onClick={handleClearChat}
                 title="Restart conversation"
-                className="p-1.5 rounded-lg text-emerald-200 hover:text-white hover:bg-white/10 transition-colors"
+                style={{ background: 'transparent', border: 'none', color: '#A7F3D0', padding: '6px', cursor: 'pointer', display: 'flex' }}
               >
-                <RefreshCw className="w-4 h-4" />
+                <RefreshCw size={15} />
               </button>
+
               <button
                 onClick={() => setIsOpen(false)}
-                className="p-1.5 rounded-lg text-emerald-200 hover:text-white hover:bg-white/10 transition-colors"
+                title="Close"
+                style={{ background: 'transparent', border: 'none', color: '#A7F3D0', padding: '6px', cursor: 'pointer', display: 'flex' }}
               >
-                <X className="w-5 h-5" />
+                <X size={18} />
               </button>
             </div>
           </div>
 
           {/* Offline Warning Banner */}
           {!isOnline && (
-            <div className="bg-amber-500/15 border-b border-amber-500/30 px-4 py-2 flex items-center justify-between text-xs text-amber-300">
-              <div className="flex items-center gap-1.5">
-                <WifiOff className="w-3.5 h-3.5 text-amber-400" />
-                <span>Device is offline. Using local cache.</span>
+            <div style={{ background: 'rgba(245, 158, 11, 0.15)', borderBottom: '1px solid rgba(245, 158, 11, 0.3)', padding: '6px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.74rem', color: '#FCD34D' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <WifiOff size={13} color="#F59E0B" />
+                <span>Device is offline. Local cache ready.</span>
               </div>
-              <a
-                href={`tel:${WHATSAPP_NUMBER}`}
-                className="text-amber-200 underline font-semibold hover:text-white"
-              >
-                Call Desk
-              </a>
+              <a href={`tel:${WHATSAPP_NUMBER}`} style={{ color: '#FDE68A', textDecoration: 'underline', fontWeight: 700 }}>Call Desk</a>
             </div>
           )}
 
-          {/* User Status Bar if Logged In / Guest */}
-          <div className="bg-slate-800/80 px-4 py-2 border-b border-slate-700/60 flex items-center justify-between text-xs text-slate-300">
+          {/* User Status Sub-Bar */}
+          <div style={{ background: '#0F172A', padding: '6px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.74rem' }}>
             {currentUser ? (
-              <span className="flex items-center gap-1.5 text-emerald-400 font-medium">
-                <Activity className="w-3.5 h-3.5 text-emerald-400" />
-                Live Student Tracking Enabled
-              </span>
+              <span style={{ color: '#34D399', fontWeight: 600 }}>? Live Student Progress Sync Active</span>
             ) : (
-              <div className="flex items-center justify-between w-full">
-                <span className="text-slate-400">Want live student tracking?</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                <span style={{ color: '#94A3B8' }}>Want live progress tracking?</span>
                 <button
                   onClick={() => {
                     setIsOpen(false);
                     if (onOpenLogin) onOpenLogin();
                   }}
-                  className="text-emerald-400 hover:text-emerald-300 font-semibold underline ml-1"
+                  style={{ background: 'transparent', border: 'none', color: '#34D399', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
                 >
                   Log In
                 </button>
@@ -306,38 +326,55 @@ export default function AIAssistantWidget({ currentUser, activeStudent, onOpenLo
             )}
           </div>
 
-          {/* Chat Messages Body */}
-          <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-950/60 scrollbar-thin scrollbar-thumb-slate-700">
+          {/* Messages Body */}
+          <div style={{
+            flex: 1,
+            padding: '14px',
+            overflowY: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px',
+            background: 'radial-gradient(ellipse at top, #0F172A 0%, #080C14 100%)'
+          }}>
             {messages.map((msg) => {
               const isBot = msg.sender === 'BOT';
               return (
                 <div
                   key={msg.id}
-                  className={`flex gap-2.5 ${isBot ? 'justify-start' : 'justify-end'}`}
+                  style={{
+                    display: 'flex',
+                    gap: '8px',
+                    justifyContent: isBot ? 'flex-start' : 'flex-end'
+                  }}
                 >
                   {isBot && (
-                    <div className="w-7 h-7 rounded-lg bg-emerald-600/30 border border-emerald-500/30 flex items-center justify-center text-emerald-300 flex-shrink-0 mt-0.5">
-                      <Bot className="w-4 h-4" />
+                    <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(0, 166, 81, 0.2)', border: '1px solid rgba(0, 166, 81, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
+                      <Bot size={16} color="#34D399" />
                     </div>
                   )}
 
-                  <div className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
-                    isBot 
-                      ? 'bg-slate-800/90 text-slate-100 border border-slate-700/60 rounded-tl-sm' 
-                      : 'bg-emerald-600 text-white rounded-tr-sm shadow-md'
-                  }`}>
-                    {/* Render message text with basic bold formatting */}
-                    <div className="whitespace-pre-line break-words space-y-1.5">
+                  <div style={{
+                    maxWidth: '82%',
+                    borderRadius: isBot ? '16px 16px 16px 2px' : '16px 16px 2px 16px',
+                    padding: '10px 14px',
+                    fontSize: '0.84rem',
+                    lineHeight: '1.5',
+                    background: isBot ? 'rgba(30, 41, 59, 0.9)' : '#00A651',
+                    border: isBot ? '1px solid rgba(255, 255, 255, 0.08)' : 'none',
+                    color: '#F8FAFC',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
+                  }}>
+                    <div style={{ whiteSpace: 'pre-line', wordBreak: 'break-word' }}>
                       {msg.text.split('\n\n').map((paragraph, pIdx) => (
-                        <p key={pIdx}>
+                        <p key={pIdx} style={{ margin: '0 0 6px 0' }}>
                           {paragraph.split('\n').map((line, lIdx) => (
-                            <span key={lIdx} className="block">
+                            <span key={lIdx} style={{ display: 'block' }}>
                               {line.split(/(\*\*.*?\*\*)/g).map((chunk, cIdx) => {
                                 if (chunk.startsWith('**') && chunk.endsWith('**')) {
-                                  return <strong key={cIdx} className="text-emerald-300 font-semibold">{chunk.slice(2, -2)}</strong>;
+                                  return <strong key={cIdx} style={{ color: isBot ? '#34D399' : '#FFFFFF', fontWeight: 700 }}>{chunk.slice(2, -2)}</strong>;
                                 }
                                 if (chunk.startsWith('*') && chunk.endsWith('*')) {
-                                  return <em key={cIdx} className="text-slate-300">{chunk.slice(1, -1)}</em>;
+                                  return <em key={cIdx} style={{ color: '#CBD5E1' }}>{chunk.slice(1, -1)}</em>;
                                 }
                                 return chunk;
                               })}
@@ -346,31 +383,28 @@ export default function AIAssistantWidget({ currentUser, activeStudent, onOpenLo
                         </p>
                       ))}
                     </div>
-
-                    <div className={`text-[10px] mt-1 text-right ${isBot ? 'text-slate-400' : 'text-emerald-200'}`}>
+                    <div style={{ fontSize: '0.62rem', color: isBot ? '#94A3B8' : '#D1FAE5', textAlign: 'right', marginTop: '4px' }}>
                       {msg.time}
                     </div>
                   </div>
 
                   {!isBot && (
-                    <div className="w-7 h-7 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-300 flex-shrink-0 mt-0.5">
-                      <User className="w-4 h-4" />
+                    <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(0, 166, 81, 0.2)', border: '1px solid rgba(0, 166, 81, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
+                      <User size={16} color="#34D399" />
                     </div>
                   )}
                 </div>
               );
             })}
 
-            {/* Loading Indicator */}
             {isLoading && (
-              <div className="flex gap-2.5 justify-start">
-                <div className="w-7 h-7 rounded-lg bg-emerald-600/30 border border-emerald-500/30 flex items-center justify-center text-emerald-300 flex-shrink-0 mt-0.5">
-                  <Bot className="w-4 h-4 animate-spin" />
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-start' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(0, 166, 81, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Bot size={16} color="#34D399" />
                 </div>
-                <div className="bg-slate-800/90 border border-slate-700/60 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-bounce [animation-delay:-0.3s]"></span>
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-bounce [animation-delay:-0.15s]"></span>
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-bounce"></span>
+                <div style={{ background: 'rgba(30, 41, 59, 0.9)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '16px 16px 16px 2px', padding: '10px 16px', color: '#34D399', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Sparkles size={14} color="#34D399" />
+                  <span>SomaBot is thinking...</span>
                 </div>
               </div>
             )}
@@ -378,16 +412,37 @@ export default function AIAssistantWidget({ currentUser, activeStudent, onOpenLo
           </div>
 
           {/* Quick Prompts Carousel */}
-          <div className="px-3 py-2 bg-slate-900 border-t border-slate-800 overflow-x-auto whitespace-nowrap scrollbar-none flex gap-1.5">
+          <div style={{
+            background: '#0F172A',
+            borderTop: '1px solid rgba(255,255,255,0.06)',
+            padding: '8px 12px',
+            display: 'flex',
+            gap: '6px',
+            overflowX: 'auto',
+            whiteSpace: 'nowrap'
+          }}>
             {quickPrompts.map((p, idx) => (
               <button
                 key={idx}
                 disabled={isLoading}
                 onClick={() => handleSendMessage(p.query)}
-                className="text-xs px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-all flex items-center gap-1 flex-shrink-0"
+                style={{
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '9999px',
+                  padding: '5px 10px',
+                  color: '#CBD5E1',
+                  fontSize: '0.72rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
               >
-                <Sparkles className="w-3 h-3 text-emerald-400" />
-                {p.label}
+                <Sparkles size={10} color="#34D399" />
+                <span>{p.label}</span>
               </button>
             ))}
           </div>
@@ -398,21 +453,49 @@ export default function AIAssistantWidget({ currentUser, activeStudent, onOpenLo
               e.preventDefault();
               handleSendMessage();
             }}
-            className="p-3 bg-slate-900 border-t border-slate-800 flex items-center gap-2"
+            style={{
+              background: '#0B1120',
+              borderTop: '1px solid rgba(255,255,255,0.08)',
+              padding: '10px 12px',
+              display: 'flex',
+              gap: '8px',
+              alignItems: 'center'
+            }}
           >
             <input
               type="text"
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               placeholder={currentUser ? "Ask about progress, lessons, or fees..." : "Ask about CBC, fees, legal info..."}
-              className="flex-1 bg-slate-800 border border-slate-700 text-white rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent placeholder-slate-400"
+              style={{
+                flex: 1,
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                borderRadius: '10px',
+                padding: '9px 12px',
+                color: '#FFFFFF',
+                fontSize: '0.84rem',
+                outline: 'none'
+              }}
             />
             <button
               type="submit"
               disabled={!inputMessage.trim() || isLoading}
-              className="p-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:hover:bg-emerald-600 text-white rounded-xl shadow transition-colors flex items-center justify-center"
+              style={{
+                background: '#00A651',
+                border: 'none',
+                borderRadius: '10px',
+                width: '38px',
+                height: '38px',
+                color: '#FFFFFF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                opacity: (!inputMessage.trim() || isLoading) ? 0.5 : 1
+              }}
             >
-              <Send className="w-4 h-4" />
+              <Send size={16} />
             </button>
           </form>
         </div>
