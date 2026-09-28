@@ -1,3 +1,4 @@
+import { generateClientBotResponse } from './chatbotFallback';
 const API_BASE = typeof window !== 'undefined' && import.meta.env.VITE_API_URL 
   ? import.meta.env.VITE_API_URL 
   : 'https://soma-hub-backend.onrender.com/api';
@@ -245,18 +246,18 @@ export const api = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message, session_id: sessionId, guest_name: guestName })
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return await res.json();
     } catch (e) {
-      return {
-        response: "Hello! I am having trouble reaching the server right now. Please check your internet connection or reach us on WhatsApp.",
-        is_meaningful: false,
-        error: e.message
-      };
+      // Instant Client Fallback Engine
+      return generateClientBotResponse(message, null, null);
     }
   },
 
-  async sendAuthChatMessage(message, sessionId, studentId = null, userEmail = null) {
+  async sendAuthChatMessage(message, sessionId, student = null, user = null) {
     try {
+      const studentId = typeof student === 'object' ? student?.id : student;
+      const userEmail = typeof user === 'object' ? user?.email : user;
       const res = await fetch(`${API_BASE}/chatbot/authenticated/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -267,13 +268,11 @@ export const api = {
           user_email: userEmail
         })
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return await res.json();
     } catch (e) {
-      return {
-        response: "I'm having trouble syncing with your live homeschool data right now. Please try again in a moment.",
-        is_meaningful: false,
-        error: e.message
-      };
+      // Instant Client Fallback Engine with Live Active Context
+      return generateClientBotResponse(message, user, student);
     }
   },
 
