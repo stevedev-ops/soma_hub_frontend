@@ -58,8 +58,12 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('somahome_user');
     localStorage.removeItem('somahome_parent_children_v3');
     localStorage.removeItem('somahome_chat_session_id');
+    localStorage.removeItem('somahome_bot_position');
     try { sessionStorage.clear(); } catch (e) {}
     setIsLoginModalOpen(false);
+    if (typeof window !== 'undefined') {
+      window.location.href = '/';
+    }
   };
 
   return (
