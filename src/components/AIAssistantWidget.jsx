@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, Send, Bot, User, Sparkles, RefreshCw,
   WifiOff, MessageCircle
@@ -13,6 +13,16 @@ export default function AIAssistantWidget({ currentUser, activeStudent, onOpenLo
   const [sessionId, setSessionId] = useState('');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const messagesEndRef = useRef(null);
+
+  // Sync user state from props or localStorage
+  const effectiveUser = currentUser || (() => {
+    try {
+      const saved = localStorage.getItem('somahome_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      return null;
+    }
+  })();
 
   const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '254700000000';
 
@@ -36,13 +46,13 @@ export default function AIAssistantWidget({ currentUser, activeStudent, onOpenLo
     setSessionId(currentSession);
 
     if (messages.length === 0) {
-      if (currentUser) {
-        const userName = currentUser.first_name || currentUser.name || currentUser.username || 'Parent';
+      if (effectiveUser) {
+        const userName = effectiveUser.first_name || effectiveUser.name || effectiveUser.username || 'Parent';
         setMessages([
           {
             id: 'init-1',
             sender: 'BOT',
-            text: `?? Jambo **${userName}**! I am **SomaBot**, your AI Homeschool Assistant.\n\nI can help you check your learner's progress, review today's lessons, examine project rubric scores, or assist with curriculum questions.\n\nHow can I help you today?`,
+            text: `👋 Jambo **${userName}**! I am **SomaBot**, your AI Homeschool Assistant.\n\nI can help you check your learner's progress, review today's lessons, examine project rubric scores, or assist with curriculum questions.\n\nHow can I help you today?`,
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             metadata: { is_greeting: true }
           }
@@ -52,14 +62,14 @@ export default function AIAssistantWidget({ currentUser, activeStudent, onOpenLo
           {
             id: 'init-1',
             sender: 'BOT',
-            text: `?? Jambo & Karibu to **SomaHome Kenya**!\n\nI'm **SomaBot**, your AI Homeschool Guide. Ask me anything about:\n? **CBC & Cambridge term packages**\n? **Pricing (KES 3,500/term) & M-Pesa checkout**\n? **Homeschooling legal compliance & KNEC**\n? **Finding verified tutors in Nairobi**\n\nHow can I support your homeschooling journey?`,
+            text: `👋 Jambo & Karibu to **SomaHome Kenya**!\n\nI'm **SomaBot**, your AI Homeschool Guide. Ask me anything about:\n• **CBC & Cambridge term packages**\n• **Pricing (KES 3,500/term) & M-Pesa checkout**\n• **Homeschooling legal compliance & KNEC**\n• **Finding verified tutors in Nairobi**\n\nHow can I support your homeschooling journey?`,
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             metadata: { is_greeting: true }
           }
         ]);
       }
     }
-  }, [currentUser]);
+  }, [effectiveUser]);
 
   useEffect(() => {
     if (isOpen) {
@@ -89,7 +99,7 @@ export default function AIAssistantWidget({ currentUser, activeStudent, onOpenLo
           {
             id: 'bot_offline_' + Date.now(),
             sender: 'BOT',
-            text: `?? **You appear to be offline.**\n\nYour inquiry has been cached. You can tap the **WhatsApp** button above to send this directly to our team via SMS / WhatsApp.`,
+            text: `📡 **You appear to be offline.**\n\nYour inquiry has been cached. You can tap the **WhatsApp** button above to send this directly to our team via SMS / WhatsApp.`,
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             metadata: { offline: true }
           }
@@ -101,14 +111,15 @@ export default function AIAssistantWidget({ currentUser, activeStudent, onOpenLo
 
     try {
       let data;
-      if (currentUser) {
-        const studentId = typeof activeStudent === 'object' ? activeStudent?.id : activeStudent;
-        data = await api.sendAuthChatMessage(textToSend, sessionId, activeStudent, currentUser);
+      if (effectiveUser) {
+        data = await api.sendAuthChatMessage(textToSend, sessionId, activeStudent, effectiveUser);
       } else {
         data = await api.sendPublicChatMessage(textToSend, sessionId, 'Guest Visitor');
       }
 
-      const botReply = data?.response || "I'm having trouble retrieving that information right now. Please try again shortly.";
+      const botReply = typeof data === 'string'
+        ? data
+        : (data?.response || data?.message || "I'm having trouble retrieving that information right now. Please try again shortly.");
       
       const botMsgObj = {
         id: 'bot_' + Date.now(),
@@ -125,7 +136,7 @@ export default function AIAssistantWidget({ currentUser, activeStudent, onOpenLo
         {
           id: 'bot_err_' + Date.now(),
           sender: 'BOT',
-          text: "?? Server temporarily unreachable. You can continue this conversation with our team directly on WhatsApp!",
+          text: "⚠️ Server temporarily unreachable. You can continue this conversation with our team directly on WhatsApp!",
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
       ]);
@@ -134,329 +145,287 @@ export default function AIAssistantWidget({ currentUser, activeStudent, onOpenLo
     }
   };
 
-  const handleClearChat = () => {
-    const newSession = 'sess_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now();
-    localStorage.setItem('somahome_chat_session_id', newSession);
-    setSessionId(newSession);
-    setMessages([
-      {
-        id: 'init_reset',
-        sender: 'BOT',
-        text: currentUser 
-          ? `Conversation restarted. How can I assist your homeschool today, **${currentUser.first_name || 'Parent'}**?`
-          : "Conversation restarted. What would you like to know about SomaHome homeschooling?",
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      }
-    ]);
+  const openWhatsAppHandover = () => {
+    const lastUserMsg = [...messages].reverse().find(m => m.sender === 'USER')?.text || 'Homeschooling inquiry';
+    const encoded = encodeURIComponent(`Hi SomaHome Team! I have a question regarding: "${lastUserMsg}"`);
+    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encoded}`, '_blank');
   };
 
-  const getWhatsAppLink = () => {
-    const lastUserMsg = [...messages].reverse().find(m => m.sender === 'USER')?.text || 'Homeschool Information';
-    const userLabel = currentUser ? (currentUser.first_name || currentUser.username) : 'Prospective Parent';
-    const message = encodeURIComponent(
-      `Hello SomaHome Team, I was chatting with SomaBot on the platform (${userLabel}).\n\nTopic: "${lastUserMsg}"\n\nPlease assist me further.`
-    );
-    return `https://wa.me/${WHATSAPP_NUMBER}?text=${message}`;
-  };
-
-  const quickPrompts = currentUser ? [
-    { label: "?? Child progress", query: "Check my student's activity, completed lessons, and project rubric scores" },
-    { label: "?? Today's plan", query: "What lessons and activities are scheduled for today?" },
-    { label: "?? M-Pesa Term Fees", query: "How much are the term packages and how do I renew via M-Pesa?" },
-    { label: "?? Legal & KNEC Info", query: "How do I register my child for KNEC assessments or Cambridge exams as a homeschooler?" }
+  const quickChips = effectiveUser ? [
+    { label: "📊 Today's Progress", query: "Check my learner's recent progress and project rubrics" },
+    { label: "👤 Who Am I?", query: "who am i" },
+    { label: "👨‍👩‍👧‍👦 Learner Limit", query: "how many children maximum do you need?" },
+    { label: "🚀 How Soma Works", query: "how do i go about soma, explain it to me" }
   ] : [
-    { label: "?? Pricing & M-Pesa", query: "How much does SomaHome cost per term and how do I pay with M-Pesa?" },
-    { label: "???? CBC Guide", query: "How does the Kenya CBC curriculum work on SomaHome from Grade 1 to 9?" },
-    { label: "???? Cambridge Option", query: "Do you support British Cambridge curriculum and IGCSE preparation?" },
-    { label: "?? Legality in Kenya", query: "Is homeschooling legal in Kenya and how does Ministry of Education compliance work?" },
-    { label: "????? Hire Tutors", query: "How do I find a private home tutor or join a learning pod in Nairobi?" }
+    { label: "💳 Pricing & M-Pesa", query: "What are the term package fees and how do I pay with M-Pesa?" },
+    { label: "🇰🇪 CBC vs Cambridge", query: "How does Kenya CBC compare with Cambridge?" },
+    { label: "👨‍👩‍👧‍👦 Learner Limit", query: "how many children maximum do you need?" },
+    { label: "🚀 How It Works", query: "how do i go about soma, explain it to me" }
   ];
 
   return (
-    <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 99999, fontFamily: 'var(--font-body, system-ui, sans-serif)' }}>
-      {/* Closed Floating Launcher Button */}
-      {!isOpen && (
-        <button
-          onClick={() => setIsOpen(true)}
+    <>
+      {/* Floating Launcher Button */}
+      <button
+        onClick={() => setIsOpen(prev => !prev)}
+        style={{
+          position: 'fixed',
+          bottom: '24px',
+          right: '24px',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          padding: '12px 20px',
+          borderRadius: '50px',
+          background: 'linear-gradient(135deg, #00A651 0%, #00803E 100%)',
+          color: '#ffffff',
+          border: 'none',
+          boxShadow: '0 10px 25px rgba(0, 166, 81, 0.45)',
+          cursor: 'pointer',
+          fontWeight: 600,
+          fontSize: '14px',
+          transition: 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
+        }}
+        onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
+        onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+        title="Open AI Homeschool Assistant"
+      >
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+          <Bot size={22} color="#ffffff" />
+          <span style={{
+            position: 'absolute',
+            top: '-2px',
+            right: '-2px',
+            width: '8px',
+            height: '8px',
+            borderRadius: '50%',
+            backgroundColor: isOnline ? '#34D399' : '#EF4444',
+            border: '2px solid #00A651'
+          }} />
+        </div>
+        <span>{isOpen ? 'Close SomaBot' : 'Ask SomaBot AI'}</span>
+      </button>
+
+      {/* Slide-out / Pop-up Chat Window */}
+      {isOpen && (
+        <div
           style={{
-            background: 'linear-gradient(135deg, #00A651 0%, #059669 100%)',
-            border: '1px solid rgba(255, 255, 255, 0.25)',
-            borderRadius: '9999px',
-            padding: '10px 18px 10px 12px',
-            color: '#FFFFFF',
+            position: 'fixed',
+            bottom: '88px',
+            right: '24px',
+            width: '380px',
+            maxWidth: 'calc(100vw - 32px)',
+            height: '560px',
+            maxHeight: 'calc(100vh - 120px)',
+            zIndex: 9999,
             display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            cursor: 'pointer',
-            boxShadow: '0 10px 30px rgba(0, 166, 81, 0.4), 0 0 20px rgba(0, 166, 81, 0.25)',
-            transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+            flexDirection: 'column',
+            borderRadius: '20px',
+            background: 'rgba(15, 23, 42, 0.95)',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)',
+            overflow: 'hidden',
+            fontFamily: 'system-ui, -apple-system, sans-serif',
+            color: '#f8fafc'
           }}
         >
-          <div style={{ position: 'relative', width: '38px', height: '38px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Bot size={22} color="#FFFFFF" />
-            <span style={{
-              position: 'absolute', top: '-2px', right: '-2px', width: '12px', height: '12px',
-              borderRadius: '50%', background: '#F59E0B', border: '2px solid #00A651'
-            }}></span>
-          </div>
-
-          <div style={{ textAlign: 'left' }}>
-            <div style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#D1FAE5', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Sparkles size={11} color="#FBBF24" />
-              SomaBot AI
-            </div>
-            <div style={{ fontSize: '0.84rem', fontWeight: 800, color: '#FFFFFF', whiteSpace: 'nowrap' }}>
-              {currentUser ? 'Homeschool Assistant' : 'Ask Anything ? CBC & Fees'}
-            </div>
-          </div>
-        </button>
-      )}
-
-      {/* Expanded Chat Box Window */}
-      {isOpen && (
-        <div style={{
-          width: '400px',
-          maxWidth: 'calc(100vw - 32px)',
-          height: '580px',
-          maxHeight: 'calc(100vh - 48px)',
-          background: '#0B1120',
-          border: '1px solid rgba(0, 166, 81, 0.4)',
-          borderRadius: '20px',
-          boxShadow: '0 25px 60px rgba(0, 0, 0, 0.9), 0 0 30px rgba(0, 166, 81, 0.15)',
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column'
-        }}>
           {/* Header */}
-          <div style={{
-            background: 'linear-gradient(135deg, #064E3B 0%, #065F46 50%, #0F172A 100%)',
-            padding: '14px 16px',
-            borderBottom: '1px solid rgba(255,255,255,0.1)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between'
-          }}>
+          <div
+            style={{
+              padding: '16px 18px',
+              background: 'linear-gradient(135deg, rgba(0, 166, 81, 0.25) 0%, rgba(15, 23, 42, 0.8) 100%)',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}
+          >
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Bot size={22} color="#A7F3D0" />
-              </div>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#FFFFFF' }}>SomaBot AI</span>
-                  <span style={{
-                    fontSize: '0.62rem', fontWeight: 800, textTransform: 'uppercase',
-                    background: 'rgba(52, 211, 153, 0.2)', color: '#34D399',
-                    padding: '2px 6px', borderRadius: '9999px', border: '1px solid rgba(52, 211, 153, 0.3)'
-                  }}>
-                    {currentUser ? (currentUser.role || 'Active Learner') : 'Guest'}
-                  </span>
-                </div>
-                <div style={{ fontSize: '0.72rem', color: '#D1FAE5', opacity: 0.85, display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: isOnline ? '#34D399' : '#F59E0B' }}></span>
-                  {isOnline 
-                    ? (currentUser ? `Connected: ${currentUser.first_name || currentUser.username}` : 'Instant 24/7 Homeschool Guide')
-                    : 'Offline Mode Active'
-                  }
-                </div>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <a
-                href={getWhatsAppLink()}
-                target="_blank"
-                rel="noopener noreferrer"
-                title="Continue on WhatsApp"
+              <div
                 style={{
-                  background: '#25D366', color: '#FFFFFF', borderRadius: '8px', padding: '6px 10px',
-                  display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none',
-                  fontSize: '0.72rem', fontWeight: 800, border: 'none'
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '10px',
+                  background: '#00A651',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 4px 12px rgba(0, 166, 81, 0.4)'
                 }}
               >
-                <MessageCircle size={14} color="#FFFFFF" />
-                <span>WhatsApp</span>
-              </a>
+                <Sparkles size={18} color="#ffffff" />
+              </div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '15px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>SomaBot AI</span>
+                  <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '6px', background: 'rgba(0, 166, 81, 0.3)', color: '#34D399', fontWeight: 600 }}>
+                    {effectiveUser ? (effectiveUser.role || 'PARENT') : 'GUEST'}
+                  </span>
+                </div>
+                <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+                  {effectiveUser ? `Active for ${effectiveUser.first_name || effectiveUser.name || 'Parent'}` : 'Kenya Homeschool Guide'}
+                </div>
+              </div>
+            </div>
 
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <button
-                onClick={handleClearChat}
-                title="Restart conversation"
-                style={{ background: 'transparent', border: 'none', color: '#A7F3D0', padding: '6px', cursor: 'pointer', display: 'flex' }}
+                onClick={openWhatsAppHandover}
+                style={{
+                  background: 'rgba(37, 211, 102, 0.15)',
+                  border: '1px solid rgba(37, 211, 102, 0.4)',
+                  color: '#25D366',
+                  padding: '6px 10px',
+                  borderRadius: '8px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+                title="Handover conversation to WhatsApp Human Support"
               >
-                <RefreshCw size={15} />
+                <MessageCircle size={13} />
+                <span>WhatsApp</span>
               </button>
-
               <button
                 onClick={() => setIsOpen(false)}
-                title="Close"
-                style={{ background: 'transparent', border: 'none', color: '#A7F3D0', padding: '6px', cursor: 'pointer', display: 'flex' }}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
               >
                 <X size={18} />
               </button>
             </div>
           </div>
 
-          {/* Offline Warning Banner */}
+          {/* Offline Banner */}
           {!isOnline && (
-            <div style={{ background: 'rgba(245, 158, 11, 0.15)', borderBottom: '1px solid rgba(245, 158, 11, 0.3)', padding: '6px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.74rem', color: '#FCD34D' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <WifiOff size={13} color="#F59E0B" />
-                <span>Device is offline. Local cache ready.</span>
-              </div>
-              <a href={`tel:${WHATSAPP_NUMBER}`} style={{ color: '#FDE68A', textDecoration: 'underline', fontWeight: 700 }}>Call Desk</a>
+            <div
+              style={{
+                background: 'rgba(239, 68, 68, 0.2)',
+                borderBottom: '1px solid rgba(239, 68, 68, 0.3)',
+                padding: '6px 12px',
+                fontSize: '11px',
+                color: '#fca5a5',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              <WifiOff size={13} />
+              <span>Offline mode. Inquiries will route to WhatsApp.</span>
             </div>
           )}
 
-          {/* User Status Sub-Bar */}
-          <div style={{ background: '#0F172A', padding: '6px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.74rem' }}>
-            {currentUser ? (
-              <span style={{ color: '#34D399', fontWeight: 600 }}>? Live Student Progress Sync Active</span>
-            ) : (
-              <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-                <span style={{ color: '#94A3B8' }}>Want live progress tracking?</span>
-                <button
-                  onClick={() => {
-                    setIsOpen(false);
-                    if (onOpenLogin) onOpenLogin();
-                  }}
-                  style={{ background: 'transparent', border: 'none', color: '#34D399', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
-                >
-                  Log In
-                </button>
-              </div>
-            )}
+          {/* Quick Suggestions Bar */}
+          <div
+            style={{
+              padding: '8px 12px',
+              display: 'flex',
+              gap: '6px',
+              overflowX: 'auto',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+              scrollbarWidth: 'none'
+            }}
+          >
+            {quickChips.map((chip, idx) => (
+              <button
+                key={idx}
+                onClick={() => handleSendMessage(chip.query)}
+                style={{
+                  whiteSpace: 'nowrap',
+                  fontSize: '11px',
+                  padding: '4px 10px',
+                  borderRadius: '12px',
+                  background: 'rgba(255, 255, 255, 0.06)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  color: '#cbd5e1',
+                  cursor: 'pointer',
+                  transition: 'background 0.15s ease'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(0, 166, 81, 0.25)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)'}
+              >
+                {chip.label}
+              </button>
+            ))}
           </div>
 
-          {/* Messages Body */}
-          <div style={{
-            flex: 1,
-            padding: '14px',
-            overflowY: 'auto',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '10px',
-            background: 'radial-gradient(ellipse at top, #0F172A 0%, #080C14 100%)'
-          }}>
-            {messages.map((msg) => {
-              const isBot = msg.sender === 'BOT';
+          {/* Message List */}
+          <div
+            style={{
+              flex: 1,
+              padding: '16px',
+              overflowY: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px'
+            }}
+          >
+            {messages.map((m) => {
+              const isUser = m.sender === 'USER';
               return (
                 <div
-                  key={msg.id}
+                  key={m.id}
                   style={{
                     display: 'flex',
-                    gap: '8px',
-                    justifyContent: isBot ? 'flex-start' : 'flex-end'
+                    flexDirection: 'column',
+                    alignItems: isUser ? 'flex-end' : 'flex-start',
+                    maxWidth: '100%'
                   }}
                 >
-                  {isBot && (
-                    <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(0, 166, 81, 0.2)', border: '1px solid rgba(0, 166, 81, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
-                      <Bot size={16} color="#34D399" />
-                    </div>
-                  )}
-
-                  <div style={{
-                    maxWidth: '82%',
-                    borderRadius: isBot ? '16px 16px 16px 2px' : '16px 16px 2px 16px',
-                    padding: '10px 14px',
-                    fontSize: '0.84rem',
-                    lineHeight: '1.5',
-                    background: isBot ? 'rgba(30, 41, 59, 0.9)' : '#00A651',
-                    border: isBot ? '1px solid rgba(255, 255, 255, 0.08)' : 'none',
-                    color: '#F8FAFC',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
-                  }}>
-                    <div style={{ whiteSpace: 'pre-line', wordBreak: 'break-word' }}>
-                      {msg.text.split('\n\n').map((paragraph, pIdx) => (
-                        <p key={pIdx} style={{ margin: '0 0 6px 0' }}>
-                          {paragraph.split('\n').map((line, lIdx) => (
-                            <span key={lIdx} style={{ display: 'block' }}>
-                              {line.split(/(\*\*.*?\*\*)/g).map((chunk, cIdx) => {
-                                if (chunk.startsWith('**') && chunk.endsWith('**')) {
-                                  return <strong key={cIdx} style={{ color: isBot ? '#34D399' : '#FFFFFF', fontWeight: 700 }}>{chunk.slice(2, -2)}</strong>;
-                                }
-                                if (chunk.startsWith('*') && chunk.endsWith('*')) {
-                                  return <em key={cIdx} style={{ color: '#CBD5E1' }}>{chunk.slice(1, -1)}</em>;
-                                }
-                                return chunk;
-                              })}
-                            </span>
-                          ))}
-                        </p>
-                      ))}
-                    </div>
-                    <div style={{ fontSize: '0.62rem', color: isBot ? '#94A3B8' : '#D1FAE5', textAlign: 'right', marginTop: '4px' }}>
-                      {msg.time}
-                    </div>
+                  <div
+                    style={{
+                      maxWidth: '85%',
+                      padding: '10px 14px',
+                      borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                      background: isUser 
+                        ? 'linear-gradient(135deg, #00A651 0%, #00803E 100%)' 
+                        : 'rgba(255, 255, 255, 0.07)',
+                      color: '#ffffff',
+                      fontSize: '13px',
+                      lineHeight: '1.5',
+                      wordBreak: 'break-word',
+                      whiteSpace: 'pre-wrap',
+                      border: isUser ? 'none' : '1px solid rgba(255, 255, 255, 0.08)',
+                      boxShadow: isUser ? '0 4px 12px rgba(0, 166, 81, 0.2)' : 'none'
+                    }}
+                  >
+                    {m.text}
                   </div>
-
-                  {!isBot && (
-                    <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(0, 166, 81, 0.2)', border: '1px solid rgba(0, 166, 81, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
-                      <User size={16} color="#34D399" />
-                    </div>
-                  )}
+                  <span style={{ fontSize: '10px', color: '#64748b', marginTop: '3px', padding: '0 4px' }}>
+                    {m.time}
+                  </span>
                 </div>
               );
             })}
 
             {isLoading && (
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-start' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(0, 166, 81, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Bot size={16} color="#34D399" />
-                </div>
-                <div style={{ background: 'rgba(30, 41, 59, 0.9)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '16px 16px 16px 2px', padding: '10px 16px', color: '#34D399', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Sparkles size={14} color="#34D399" />
-                  <span>SomaBot is thinking...</span>
-                </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'rgba(255, 255, 255, 0.04)', borderRadius: '12px', width: 'fit-content' }}>
+                <RefreshCw size={14} className="animate-spin" color="#00A651" />
+                <span style={{ fontSize: '12px', color: '#94a3b8' }}>SomaBot is thinking...</span>
               </div>
             )}
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Quick Prompts Carousel */}
-          <div style={{
-            background: '#0F172A',
-            borderTop: '1px solid rgba(255,255,255,0.06)',
-            padding: '8px 12px',
-            display: 'flex',
-            gap: '6px',
-            overflowX: 'auto',
-            whiteSpace: 'nowrap'
-          }}>
-            {quickPrompts.map((p, idx) => (
-              <button
-                key={idx}
-                disabled={isLoading}
-                onClick={() => handleSendMessage(p.query)}
-                style={{
-                  background: 'rgba(255,255,255,0.05)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: '9999px',
-                  padding: '5px 10px',
-                  color: '#CBD5E1',
-                  fontSize: '0.72rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  flexShrink: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}
-              >
-                <Sparkles size={10} color="#34D399" />
-                <span>{p.label}</span>
-              </button>
-            ))}
-          </div>
-
-          {/* Input Form */}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleSendMessage();
-            }}
+          {/* Input Footer */}
+          <div
             style={{
-              background: '#0B1120',
-              borderTop: '1px solid rgba(255,255,255,0.08)',
-              padding: '10px 12px',
+              padding: '12px',
+              borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+              background: 'rgba(15, 23, 42, 0.98)',
               display: 'flex',
               gap: '8px',
               alignItems: 'center'
@@ -465,41 +434,47 @@ export default function AIAssistantWidget({ currentUser, activeStudent, onOpenLo
             <input
               type="text"
               value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              placeholder={currentUser ? "Ask about progress, lessons, or fees..." : "Ask about CBC, fees, legal info..."}
+              onChange={e => setInputMessage(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') handleSendMessage();
+              }}
+              placeholder={effectiveUser ? "Ask about lessons, rubrics, advice..." : "Ask about CBC, pricing, tutors..."}
               style={{
                 flex: 1,
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.12)',
-                borderRadius: '10px',
-                padding: '9px 12px',
-                color: '#FFFFFF',
-                fontSize: '0.84rem',
-                outline: 'none'
+                padding: '10px 14px',
+                borderRadius: '12px',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                color: '#ffffff',
+                fontSize: '13px',
+                outline: 'none',
+                transition: 'border 0.2s ease'
               }}
+              onFocus={e => e.currentTarget.style.borderColor = '#00A651'}
+              onBlur={e => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.12)'}
             />
             <button
-              type="submit"
+              onClick={() => handleSendMessage()}
               disabled={!inputMessage.trim() || isLoading}
               style={{
-                background: '#00A651',
-                border: 'none',
-                borderRadius: '10px',
                 width: '38px',
                 height: '38px',
-                color: '#FFFFFF',
+                borderRadius: '12px',
+                background: inputMessage.trim() && !isLoading ? '#00A651' : 'rgba(255, 255, 255, 0.1)',
+                border: 'none',
+                color: '#ffffff',
+                cursor: inputMessage.trim() && !isLoading ? 'pointer' : 'default',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                cursor: 'pointer',
-                opacity: (!inputMessage.trim() || isLoading) ? 0.5 : 1
+                transition: 'all 0.2s ease'
               }}
             >
               <Send size={16} />
             </button>
-          </form>
+          </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

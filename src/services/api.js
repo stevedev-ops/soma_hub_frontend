@@ -250,14 +250,17 @@ export const api = {
       return await res.json();
     } catch (e) {
       // Instant Client Fallback Engine
-      return generateClientBotResponse(message, null, null);
+      const reply = generateClientBotResponse(message, null, null);
+      return typeof reply === 'string' ? { response: reply } : reply;
     }
   },
 
   async sendAuthChatMessage(message, sessionId, student = null, user = null) {
     try {
       const studentId = typeof student === 'object' ? student?.id : student;
-      const userEmail = typeof user === 'object' ? user?.email : user;
+      const userEmail = typeof user === 'object' ? (user?.email || user?.username) : user;
+      const userName = typeof user === 'object' ? (user?.name || user?.first_name || user?.username) : null;
+      const userRole = typeof user === 'object' ? (user?.role || 'PARENT') : 'PARENT';
       const res = await fetch(`${API_BASE}/chatbot/authenticated/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -265,14 +268,17 @@ export const api = {
           message,
           session_id: sessionId,
           student_id: studentId,
-          user_email: userEmail
+          user_email: userEmail,
+          user_name: userName,
+          user_role: userRole
         })
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return await res.json();
     } catch (e) {
       // Instant Client Fallback Engine with Live Active Context
-      return generateClientBotResponse(message, user, student);
+      const reply = generateClientBotResponse(message, user, student);
+      return typeof reply === 'string' ? { response: reply } : reply;
     }
   },
 
