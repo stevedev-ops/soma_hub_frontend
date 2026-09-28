@@ -8,6 +8,8 @@ import { useAuth } from '../../context/AuthContext';
 import { homeworkService, telemetryService } from '../../services/homeworkTelemetryStore';
 import StudentActivityTelemetryModal from '../../modules/parent/StudentActivityTelemetryModal';
 import UpcomingSessionsModal from '../../modules/parent/UpcomingSessionsModal';
+import ManageChildModal from '../../modules/parent/ManageChildModal';
+import { Settings, Edit2, Trash2 } from 'lucide-react';
 import TutorHomeworkOverviewModal from '../../modules/parent/TutorHomeworkOverviewModal';
 
 const DEFAULT_PARENT_BOOKINGS = [];
@@ -17,13 +19,16 @@ export default function FamilyCommandCenter({
   onSelectChild,
   onOpenAddChild,
   onOpenBookTutor,
-  onNavigateTab
+  onNavigateTab,
+  onUpdateChild,
+  onRemoveChild
 }) {
   const { currentUser } = useAuth();
   const [isTelemetryOpen, setIsTelemetryOpen] = useState(false);
   const [isUpcomingModalOpen, setIsUpcomingModalOpen] = useState(false);
   const [isHomeworkOverviewOpen, setIsHomeworkOverviewOpen] = useState(false);
   const [inspectingHw, setInspectingHw] = useState(null);
+  const [selectedChildForManage, setSelectedChildForManage] = useState(null);
 
   // Load telemetry and homework with live reactive sync
   const [telemetry, setTelemetry] = useState(() => telemetryService.getTelemetry(childrenList?.[0]?.name || ''));
@@ -121,18 +126,24 @@ export default function FamilyCommandCenter({
         </div>
 
         {/* Enrolled Children */}
-        <div className="glass-panel" style={{ padding: '22px', borderTop: '3px solid #00A651' }}>
+        <div 
+          className="glass-panel" 
+          onClick={() => { if (childrenList.length > 0) setSelectedChildForManage(childrenList[0]); }}
+          style={{ padding: '22px', borderTop: '3px solid #00A651', cursor: 'pointer', transition: 'transform 0.2s' }}
+          title="Click to manage enrolled learners and switch curriculum"
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase' }}>
-              ENROLLED CHILDREN
+              ENROLLED LEARNERS
             </span>
             <Users size={20} color="#34D399" />
           </div>
           <div style={{ fontSize: '1.85rem', fontWeight: 800, color: '#F8FAFC', marginTop: '6px' }}>
             {childrenList.length} Learners
           </div>
-          <div style={{ fontSize: '0.75rem', color: '#10B981', marginTop: '4px' }}>
-            {childrenList.map(c => c.name.split(' ')[0]).join(' & ')}
+          <div style={{ fontSize: '0.75rem', color: '#10B981', marginTop: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>{childrenList.length > 0 ? childrenList.map(c => c.name.split(' ')[0]).join(' & ') : 'No enrolled learners'}</span>
+            <span style={{ textDecoration: 'underline' }}>Manage / Switch →</span>
           </div>
         </div>
 
@@ -206,6 +217,91 @@ export default function FamilyCommandCenter({
           </div>
         </div>
 
+      </div>
+
+      {/* ENROLLED LEARNERS HOUSEHOLD ROSTER */}
+      <div className="glass-panel" style={{ padding: '24px', marginBottom: '32px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+          <div>
+            <span className="glass-pill" style={{ color: '#00A651', border: '1px solid rgba(0,166,81,0.3)', fontSize: '0.7rem', marginBottom: '4px', display: 'inline-block' }}>
+              👶 Household Learner Profiles & Syllabi
+            </span>
+            <h3 style={{ fontSize: '1.25rem', margin: 0, fontWeight: 800 }}>
+              Learners, Curricula & Tablet PINs
+            </h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', margin: '2px 0 0 0' }}>
+              Switch curriculum (CBC / Cambridge / US Core / ACE / Montessori), edit grades, update PINs, or remove learners.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={onOpenAddChild}
+            className="btn-primary"
+            style={{ padding: '8px 14px', fontSize: '0.82rem', gap: '6px' }}
+          >
+            <Plus size={14} />
+            <span>Add Learner</span>
+          </button>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px' }}>
+          {childrenList.map((child) => (
+            <div
+              key={child.id}
+              style={{
+                background: 'rgba(0,0,0,0.3)',
+                border: '1px solid var(--border-card)',
+                borderRadius: '16px',
+                padding: '16px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between'
+              }}
+            >
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(56,189,248,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', border: '1px solid rgba(56,189,248,0.4)' }}>
+                      {child.curriculum === 'Cambridge' ? '🇬🇧' : child.curriculum === 'US_COMMON_CORE' ? '🇺🇸' : child.curriculum === 'ACE' ? '📖' : child.curriculum === 'MONTESSORI' ? '🌿' : '🇰🇪'}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#FFFFFF' }}>{child.name}</div>
+                      <span style={{ fontSize: '0.72rem', background: 'rgba(0,166,81,0.2)', color: '#34D399', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>
+                        {child.grade}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ fontSize: '0.78rem', color: '#94A3B8', display: 'flex', justifyContent: 'space-between', padding: '8px 10px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', marginBottom: '12px' }}>
+                  <span>Tablet Login PIN:</span>
+                  <strong style={{ color: '#FBBF24', letterSpacing: '2px', fontFamily: 'monospace' }}>{child.pin || '1234'}</strong>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => setSelectedChildForManage(child)}
+                  className="btn-primary"
+                  style={{ flex: 1, padding: '8px 10px', fontSize: '0.8rem', justifyContent: 'center', gap: '4px' }}
+                >
+                  <Edit2 size={13} />
+                  <span>Change Curriculum</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedChildForManage(child)}
+                  style={{ padding: '8px 10px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: '8px', color: '#FCA5A5', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  title="Remove Child"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* SPECIALIST TUTOR HOMEWORK OVERSIGHT PANEL */}
@@ -757,6 +853,21 @@ export default function FamilyCommandCenter({
         </div>
       )}
 
+      {/* Manage Child & Switch Curriculum Modal */}
+      {selectedChildForManage && (
+        <ManageChildModal
+          child={selectedChildForManage}
+          onClose={() => setSelectedChildForManage(null)}
+          onUpdateChild={(updated) => {
+            if (onUpdateChild) onUpdateChild(updated);
+            setSelectedChildForManage(null);
+          }}
+          onRemoveChild={(childId) => {
+            if (onRemoveChild) onRemoveChild(childId);
+            setSelectedChildForManage(null);
+          }}
+        />
+      )}
     </div>
   );
 }
