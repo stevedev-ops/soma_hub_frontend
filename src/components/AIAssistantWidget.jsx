@@ -237,6 +237,115 @@ export default function AIAssistantWidget({ currentUser, activeStudent, onOpenLo
     }
   })();
 
+    // Draggable / Movable Position State (Saved across sessions)
+  const [position, setPosition] = useState(() => {
+    try {
+      const saved = localStorage.getItem('somahome_bot_position');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    // Default safe position above mobile bottom nav bar (bottom: 90px, right: 20px)
+    return { x: null, y: null };
+  });
+
+  const [isDragging, setIsDragging] = useState(false);
+  const dragRef = useRef({ startX: 0, startY: 0, initialPosX: 0, initialPosY: 0, hasMoved: false });
+  const buttonRef = useRef(null);
+
+  const handleTouchStart = (e) => {
+    const touch = e.touches[0];
+    const rect = buttonRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    dragRef.current = {
+      startX: touch.clientX,
+      startY: touch.clientY,
+      initialPosX: rect.left,
+      initialPosY: rect.top,
+      hasMoved: false
+    };
+    setIsDragging(true);
+  };
+
+  const handleTouchMove = (e) => {
+    if (!isDragging) return;
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - dragRef.current.startX;
+    const deltaY = touch.clientY - dragRef.current.startY;
+
+    if (Math.abs(deltaX) > 4 || Math.abs(deltaY) > 4) {
+      dragRef.current.hasMoved = true;
+    }
+
+    let newX = dragRef.current.initialPosX + deltaX;
+    let newY = dragRef.current.initialPosY + deltaY;
+
+    // Viewport bounds constraint
+    const btnWidth = buttonRef.current?.offsetWidth || 150;
+    const btnHeight = buttonRef.current?.offsetHeight || 50;
+    const maxX = window.innerWidth - btnWidth - 10;
+    const maxY = window.innerHeight - btnHeight - 80; // Safe above mobile nav
+
+    newX = Math.max(10, Math.min(newX, maxX));
+    newY = Math.max(10, Math.min(newY, maxY));
+
+    setPosition({ x: newX, y: newY });
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+    if (position.x !== null && position.y !== null) {
+      localStorage.setItem('somahome_bot_position', JSON.stringify(position));
+    }
+  };
+
+  const handleMouseDown = (e) => {
+    const rect = buttonRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      initialPosX: rect.left,
+      initialPosY: rect.top,
+      hasMoved: false
+    };
+    setIsDragging(true);
+
+    const onMouseMove = (moveEvent) => {
+      const deltaX = moveEvent.clientX - dragRef.current.startX;
+      const deltaY = moveEvent.clientY - dragRef.current.startY;
+
+      if (Math.abs(deltaX) > 4 || Math.abs(deltaY) > 4) {
+        dragRef.current.hasMoved = true;
+      }
+
+      let newX = dragRef.current.initialPosX + deltaX;
+      let newY = dragRef.current.initialPosY + deltaY;
+
+      const btnWidth = buttonRef.current?.offsetWidth || 150;
+      const btnHeight = buttonRef.current?.offsetHeight || 50;
+      const maxX = window.innerWidth - btnWidth - 10;
+      const maxY = window.innerHeight - btnHeight - 20;
+
+      newX = Math.max(10, Math.min(newX, maxX));
+      newY = Math.max(10, Math.min(newY, maxY));
+
+      setPosition({ x: newX, y: newY });
+    };
+
+    const onMouseUp = () => {
+      setIsDragging(false);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      if (position.x !== null && position.y !== null) {
+        localStorage.setItem('somahome_bot_position', JSON.stringify(position));
+      }
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  };
+
   const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '254700000000';
 
   useEffect(() => {
@@ -383,34 +492,47 @@ export default function AIAssistantWidget({ currentUser, activeStudent, onOpenLo
 
   return (
     <>
-      {/* Floating Launcher Button */}
+      {/* Draggable / Movable Floating Launcher Button */}
       <button
-        onClick={() => setIsOpen(prev => !prev)}
+        ref={buttonRef}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onMouseDown={handleMouseDown}
+        onClick={(e) => {
+          if (!dragRef.current.hasMoved) {
+            setIsOpen(prev => !prev);
+          }
+        }}
         style={{
           position: 'fixed',
-          bottom: '24px',
-          right: '24px',
+          left: position.x !== null ? `${position.x}px` : 'auto',
+          top: position.y !== null ? `${position.y}px` : 'auto',
+          right: position.x !== null ? 'auto' : '16px',
+          bottom: position.y !== null ? 'auto' : '90px', // Elevated above mobile bottom navigation
           zIndex: 9999,
           display: 'flex',
           alignItems: 'center',
-          gap: '10px',
-          padding: '12px 20px',
+          gap: '8px',
+          padding: '10px 16px',
           borderRadius: '50px',
           background: 'linear-gradient(135deg, #00A651 0%, #00803E 100%)',
           color: '#ffffff',
-          border: 'none',
-          boxShadow: '0 10px 25px rgba(0, 166, 81, 0.45)',
-          cursor: 'pointer',
+          border: '1px solid rgba(255, 255, 255, 0.25)',
+          boxShadow: '0 8px 24px rgba(0, 166, 81, 0.45)',
+          cursor: isDragging ? 'grabbing' : 'grab',
+          userSelect: 'none',
+          touchAction: 'none',
           fontWeight: 600,
-          fontSize: '14px',
-          transition: 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
+          fontSize: '13px',
+          transition: isDragging ? 'none' : 'transform 0.15s ease',
         }}
-        onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
-        onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-        title="Open AI Homeschool Assistant"
+        onMouseEnter={e => { if (!isDragging) e.currentTarget.style.transform = 'scale(1.05)'; }}
+        onMouseLeave={e => { if (!isDragging) e.currentTarget.style.transform = 'scale(1)'; }}
+        title="Drag anywhere on screen or tap to open AI Homeschool Assistant"
       >
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-          <Bot size={22} color="#ffffff" />
+          <Bot size={20} color="#ffffff" />
           <span style={{
             position: 'absolute',
             top: '-2px',
@@ -423,6 +545,7 @@ export default function AIAssistantWidget({ currentUser, activeStudent, onOpenLo
           }} />
         </div>
         <span>{isOpen ? 'Close SomaBot' : 'Ask SomaBot AI'}</span>
+        <span style={{ fontSize: '10px', opacity: 0.6, marginLeft: '2px' }}>⋮⋮</span>
       </button>
 
       {/* Slide-out / Pop-up Chat Window */}
