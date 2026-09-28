@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import UserProfilePill from '../modules/auth/UserProfilePill';
 import AddChildModal from '../modules/parent/AddChildModal';
-import { Bot, GraduationCap, Eye,
+import { LogOut, Bot, GraduationCap, Eye,
   Calendar, ShoppingBag, Sparkles, Award, Users, Printer,
   BookOpen, CheckSquare, Palette, Compass, Video, UserCheck, BarChart3,
   LogIn, Scale, MessageSquare, ListChecks, ChevronRight, Plus, LayoutDashboard, Clock, Send, Library, Zap, DollarSign, Share2
@@ -16,7 +16,7 @@ export default function Sidebar({
   onOpenPrintable,
   onOpenSEN
 }) {
-  const { currentUser, setIsLoginModalOpen, switchAccount } = useAuth();
+  const { currentUser, setIsLoginModalOpen, switchAccount, logout } = useAuth();
   const activeRole = currentUser?.role || 'parent';
   const [isAddChildOpen, setIsAddChildOpen] = useState(false);
 
@@ -284,14 +284,26 @@ export default function Sidebar({
             <span>Sunday Print Pack (12p)</span>
           </button>
 
-          <button
-            onClick={() => setIsLoginModalOpen(true)}
-            className="btn-secondary"
-            style={{ width: '100%', fontSize: '0.8rem', padding: '8px', justifyContent: 'center', gap: '8px', color: 'var(--text-muted)' }}
-          >
-            <LogIn size={14} />
-            <span>Account Switcher / Register</span>
-          </button>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+            <button
+              onClick={() => setIsLoginModalOpen(true)}
+              className="btn-secondary"
+              style={{ width: '100%', fontSize: '0.75rem', padding: '7px 4px', justifyContent: 'center', gap: '5px', color: 'var(--text-muted)' }}
+              title="Switch demo account"
+            >
+              <LogIn size={13} />
+              <span>Switch</span>
+            </button>
+            <button
+              onClick={() => logout && logout()}
+              className="btn-secondary"
+              style={{ width: '100%', fontSize: '0.75rem', padding: '7px 4px', justifyContent: 'center', gap: '5px', color: '#FCA5A5', background: 'rgba(239, 68, 68, 0.12)', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+              title="Sign out of current account"
+            >
+              <LogOut size={13} color="#EF4444" />
+              <span>Sign Out</span>
+            </button>
+          </div>
         </div>
       </aside>
 
