@@ -18,10 +18,12 @@ export default function LiveClassroomModal({
   if (!isOpen) return null;
 
   const { currentUser } = useAuth();
+  const isTeacher = currentUser?.role === 'tutor' || currentUser?.role === 'teacher';
   const effectiveTeacherName = teacherName || session?.tutorName || 'Teacher Specialist';
   const effectiveTeacherAvatar = tutorAvatar || session?.tutorAvatar || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80';
   const effectiveStudentName = studentName || session?.studentName || currentUser?.name || 'Learner';
   const effectiveTitle = sessionTitle || session?.focusSubject || 'Live Specialist Masterclass';
+  const roomId = session?.id || 'somahome_default_live_room';
 
   const [activeTab, setActiveTab] = useState('whiteboard'); // 'whiteboard' | 'chat'
   const [micOn, setMicOn] = useState(true);
@@ -30,13 +32,15 @@ export default function LiveClassroomModal({
   const [activeColor, setActiveColor] = useState('#10b981');
   const [brushSize, setBrushSize] = useState(3);
   const [isDrawing, setIsDrawing] = useState(false);
+  const [activeTool, setActiveTool] = useState('pen'); // 'pen' | 'eraser'
+  const lastPosRef = useRef({ x: 0, y: 0 });
 
   // Dynamic Classroom Chat State
   const [chatMessages, setChatMessages] = useState(() => [
     { 
       id: 1, 
       sender: effectiveTeacherName, 
-      text: `Karibu ${effectiveStudentName.split(' ')[0]}! Welcome to our 1-on-1 virtual studio. I have opened our shared canvas.`, 
+      text: `Karibu ${effectiveStudentName.split(' ')[0]}! Welcome to our 1-on-1 virtual classroom. Our interactive whiteboard and audio sync are live!`, 
       time: 'Just now', 
       isTeacher: true 
     }
@@ -46,6 +50,45 @@ export default function LiveClassroomModal({
   // Canvas Ref for Whiteboard
   const canvasRef = useRef(null);
   const [ctx, setCtx] = useState(null);
+  const channelRef = useRef(null);
+
+  // Setup BroadcastChannel for Real-Time Cross-Window Synchronization
+  useEffect(() => {
+    let bc;
+    try {
+      bc = new BroadcastChannel(`somahome_room_${roomId}`);
+      channelRef.current = bc;
+      bc.onmessage = (event) => {
+        const data = event.data;
+        if (!data) return;
+
+        if (data.type === 'draw_stroke' && canvasRef.current) {
+          const c = canvasRef.current.getContext('2d');
+          c.save();
+          c.strokeStyle = data.color;
+          c.lineWidth = data.width;
+          c.lineCap = 'round';
+          c.lineJoin = 'round';
+          c.beginPath();
+          c.moveTo(data.x0, data.y0);
+          c.lineTo(data.x1, data.y1);
+          c.stroke();
+          c.restore();
+        } else if (data.type === 'clear_canvas' && canvasRef.current) {
+          const c = canvasRef.current.getContext('2d');
+          c.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+        } else if (data.type === 'chat_message') {
+          setChatMessages((prev) => [...prev, data.message]);
+        }
+      };
+    } catch (e) {
+      console.warn('BroadcastChannel not supported in environment', e);
+    }
+
+    return () => {
+      if (bc) bc.close();
+    };
+  }, [roomId]);
 
   useEffect(() => {
     if (canvasRef.current) {
@@ -79,8 +122,9 @@ export default function LiveClassroomModal({
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    ctx.strokeStyle = activeColor;
-    ctx.lineWidth = brushSize;
+    lastPosRef.current = { x, y };
+    ctx.strokeStyle = activeTool === 'eraser' ? '#0F172A' : activeColor;
+    ctx.lineWidth = activeTool === 'eraser' ? 18 : brushSize;
     ctx.beginPath();
     ctx.moveTo(x, y);
     setIsDrawing(true);
@@ -92,8 +136,26 @@ export default function LiveClassroomModal({
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
+    const strokeColor = activeTool === 'eraser' ? '#0F172A' : activeColor;
+    const strokeWidth = activeTool === 'eraser' ? 18 : brushSize;
+
     ctx.lineTo(x, y);
     ctx.stroke();
+
+    // Broadcast stroke in real-time
+    if (channelRef.current) {
+      channelRef.current.postMessage({
+        type: 'draw_stroke',
+        x0: lastPosRef.current.x,
+        y0: lastPosRef.current.y,
+        x1: x,
+        y1: y,
+        color: strokeColor,
+        width: strokeWidth
+      });
+    }
+
+    lastPosRef.current = { x, y };
   };
 
   const stopDrawing = () => {
@@ -105,6 +167,9 @@ export default function LiveClassroomModal({
   const clearCanvas = () => {
     if (!ctx || !canvasRef.current) return;
     ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    if (channelRef.current) {
+      channelRef.current.postMessage({ type: 'clear_canvas' });
+    }
   };
 
   const handleSendMessage = (e) => {
@@ -113,13 +178,16 @@ export default function LiveClassroomModal({
 
     const msg = {
       id: Date.now(),
-      sender: `${effectiveStudentName.split(' ')[0]} (You)`,
+      sender: isTeacher ? effectiveTeacherName : `${effectiveStudentName.split(' ')[0]} (Student)`,
       text: newMessage.trim(),
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      isTeacher: false
+      isTeacher: isTeacher
     };
 
     setChatMessages((prev) => [...prev, msg]);
+    if (channelRef.current) {
+      channelRef.current.postMessage({ type: 'chat_message', message: msg });
+    }
     setNewMessage('');
   };
 
@@ -128,7 +196,7 @@ export default function LiveClassroomModal({
       style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: 'rgba(5, 10, 15, 0.95)',
+        backgroundColor: 'rgba(5, 10, 15, 0.94)',
         backdropFilter: 'blur(16px)',
         WebkitBackdropFilter: 'blur(16px)',
         display: 'flex',
@@ -142,324 +210,303 @@ export default function LiveClassroomModal({
         className="glass-panel"
         style={{
           width: '100%',
-          maxWidth: '1240px',
+          maxWidth: '1100px',
           height: '92vh',
+          maxHeight: '780px',
+          background: 'linear-gradient(180deg, #0B111E 0%, #060911 100%)',
+          border: '1.5px solid rgba(0, 166, 81, 0.4)',
+          borderRadius: '24px',
           display: 'flex',
           flexDirection: 'column',
-          borderRadius: '24px',
-          border: '1.5px solid rgba(16, 185, 129, 0.3)',
-          boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.9)',
-          background: '#0B111E',
+          boxShadow: '0 25px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(0, 166, 81, 0.15)',
           overflow: 'hidden'
         }}
       >
-        {/* Top Header Bar */}
+        {/* Classroom Header Bar */}
         <div style={{
-          padding: '14px 24px',
-          background: 'rgba(10, 14, 23, 0.9)',
+          padding: '16px 24px',
+          background: 'rgba(255, 255, 255, 0.02)',
           borderBottom: '1px solid var(--border-subtle)',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          flexShrink: 0
+          flexWrap: 'wrap',
+          gap: '12px'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <span className="glass-pill" style={{ color: '#EF4444', border: '1px solid rgba(239, 68, 68, 0.4)', fontSize: '0.75rem', fontWeight: 800 }}>
-              🔴 LIVE CLASSROOM
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: 'rgba(239, 68, 68, 0.2)',
+              border: '1px solid rgba(239, 68, 68, 0.5)',
+              color: '#EF4444',
+              fontSize: '0.72rem',
+              fontWeight: 800,
+              padding: '4px 10px',
+              borderRadius: '999px',
+              animation: 'pulse 2s infinite'
+            }}>
+              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#EF4444' }} />
+              LIVE CLASSROOM
             </span>
+
             <div>
-              <h2 style={{ fontSize: '1.15rem', margin: 0, fontWeight: 700, color: '#F8FAFC' }}>
+              <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
                 {effectiveTitle}
               </h2>
-              <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
-                Lead Facilitator: <strong style={{ color: '#34D399' }}>{effectiveTeacherName}</strong> • Learner: <strong style={{ color: '#38BDF8' }}>{effectiveStudentName}</strong>
+              <div style={{ fontSize: '0.76rem', color: '#34D399', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>👨‍🏫 Lead: <strong>{effectiveTeacherName}</strong></span>
+                <span>•</span>
+                <span>👤 Student: <strong>{effectiveStudentName}</strong></span>
               </div>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: '#10B981', background: 'rgba(16, 185, 129, 0.1)', padding: '6px 12px', borderRadius: '8px' }}>
-              <Clock size={14} />
-              <span>Live Session Active</span>
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span className="glass-pill" style={{ fontSize: '0.75rem', color: '#38BDF8', gap: '5px' }}>
+              <ShieldCheck size={14} />
+              <span>MoE Syllabus Verified</span>
+            </span>
 
             <button
               onClick={onClose}
-              className="btn-danger"
-              style={{ fontSize: '0.78rem', padding: '6px 14px', gap: '6px' }}
+              className="btn-secondary"
+              style={{ padding: '8px 14px', gap: '6px', color: '#F87171', borderColor: 'rgba(239, 68, 68, 0.3)' }}
             >
-              <PhoneOff size={14} />
-              <span>Leave Class</span>
+              <PhoneOff size={15} />
+              <span>Leave Studio</span>
             </button>
           </div>
         </div>
 
-        {/* Main Studio Area */}
-        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+        {/* Main Stage Grid (Video Feeds + Whiteboard / Chat) */}
+        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 340px', overflow: 'hidden' }}>
           
-          {/* Left Canvas / Whiteboard Studio */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '16px', overflow: 'hidden' }}>
+          {/* Left Canvas Area */}
+          <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', overflow: 'hidden' }}>
             
-            {/* Whiteboard Controls Toolbar */}
+            {/* Whiteboard Toolbar */}
             <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              background: 'rgba(15, 23, 42, 0.8)',
-              padding: '8px 16px',
-              borderRadius: '12px',
-              border: '1px solid var(--border-subtle)',
-              marginBottom: '12px',
-              flexShrink: 0
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              background: 'rgba(255, 255, 255, 0.03)', border: '1px solid var(--border-subtle)',
+              borderRadius: '14px', padding: '8px 16px'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#34D399', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <PenTool size={14} />
-                  <span>Shared Interactive Whiteboard</span>
-                </span>
-              </div>
-
-              {/* Palette & Tools */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {['#10b981', '#38bdf8', '#f59e0b', '#ef4444', '#ffffff'].map((color) => (
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700 }}>Color:</span>
+                {['#10b981', '#38bdf8', '#f59e0b', '#ef4444', '#ffffff'].map(col => (
                   <button
-                    key={color}
-                    onClick={() => setActiveColor(color)}
+                    key={col}
+                    onClick={() => { setActiveColor(col); setActiveTool('pen'); }}
                     style={{
-                      width: '20px',
-                      height: '20px',
-                      borderRadius: '50%',
-                      backgroundColor: color,
-                      border: activeColor === color ? '2px solid white' : '1px solid rgba(0,0,0,0.5)',
-                      cursor: 'pointer',
-                      transform: activeColor === color ? 'scale(1.2)' : 'scale(1)',
-                      transition: 'all 0.15s ease'
+                      width: '20px', height: '20px', borderRadius: '50%', background: col,
+                      border: activeColor === col && activeTool === 'pen' ? '2px solid #fff' : '1px solid rgba(0,0,0,0.5)',
+                      cursor: 'pointer', transform: activeColor === col && activeTool === 'pen' ? 'scale(1.2)' : 'scale(1)',
+                      transition: 'transform 0.15s'
                     }}
                   />
                 ))}
 
-                <div style={{ width: '1px', height: '18px', background: 'var(--border-subtle)', margin: '0 4px' }} />
+                <div style={{ width: '1px', height: '20px', background: 'var(--border-subtle)', margin: '0 4px' }} />
 
                 <button
-                  onClick={clearCanvas}
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    color: 'var(--text-muted)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center'
-                  }}
-                  title="Clear Canvas"
+                  onClick={() => setActiveTool('pen')}
+                  className={activeTool === 'pen' ? 'btn-primary' : 'btn-secondary'}
+                  style={{ fontSize: '0.74rem', padding: '5px 10px', gap: '4px' }}
                 >
-                  <Trash2 size={15} />
+                  <PenTool size={13} />
+                  <span>Pen</span>
+                </button>
+
+                <button
+                  onClick={() => setActiveTool('eraser')}
+                  className={activeTool === 'eraser' ? 'btn-primary' : 'btn-secondary'}
+                  style={{ fontSize: '0.74rem', padding: '5px 10px', gap: '4px' }}
+                >
+                  <Eraser size={13} />
+                  <span>Eraser</span>
                 </button>
               </div>
+
+              <button
+                onClick={clearCanvas}
+                className="btn-secondary"
+                style={{ fontSize: '0.74rem', padding: '5px 10px', gap: '4px', color: '#EF4444' }}
+              >
+                <Trash2 size={13} />
+                <span>Clear Canvas</span>
+              </button>
             </div>
 
-            {/* Drawing Canvas */}
-            <div style={{
-              flex: 1,
-              background: '#070C15',
-              borderRadius: '16px',
-              border: '1.5px solid rgba(255,255,255,0.06)',
-              overflow: 'hidden',
-              position: 'relative',
-              cursor: 'crosshair',
-              display: 'flex'
-            }}>
+            {/* Interactive Canvas */}
+            <div 
+              style={{
+                flex: 1,
+                background: '#0F172A',
+                border: '1.5px dashed rgba(255, 255, 255, 0.12)',
+                borderRadius: '16px',
+                position: 'relative',
+                overflow: 'hidden',
+                cursor: activeTool === 'eraser' ? 'cell' : 'crosshair'
+              }}
+            >
               <canvas
                 ref={canvasRef}
                 onMouseDown={startDrawing}
                 onMouseMove={draw}
                 onMouseUp={stopDrawing}
                 onMouseLeave={stopDrawing}
-                style={{ width: '100%', height: '100%' }}
+                style={{ display: 'block', width: '100%', height: '100%' }}
               />
-              <div style={{
-                position: 'absolute',
-                bottom: '12px',
-                left: '14px',
-                pointerEvents: 'none',
-                fontSize: '0.72rem',
-                color: 'var(--text-muted)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px'
-              }}>
-                <Sparkles size={12} color="#10B981" />
-                <span>Collaborative Canvas: Teacher & Students annotate together</span>
-              </div>
             </div>
 
-            {/* Bottom Controls Bar */}
+            {/* Bottom Audio/Video Control Bar */}
             <div style={{
-              marginTop: '12px',
-              padding: '10px 16px',
-              background: 'rgba(8, 12, 20, 0.95)',
-              borderRadius: '14px',
-              border: '1px solid var(--border-subtle)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexShrink: 0
+              display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '14px',
+              padding: '6px'
             }}>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button
-                  onClick={() => setMicOn(!micOn)}
-                  className="btn-secondary"
-                  style={{
-                    fontSize: '0.78rem', padding: '8px 14px', gap: '6px',
-                    color: micOn ? '#F8FAFC' : '#EF4444',
-                    borderColor: micOn ? 'var(--border-card)' : 'rgba(239, 68, 68, 0.4)'
-                  }}
-                >
-                  {micOn ? <Mic size={14} color="#10B981" /> : <MicOff size={14} color="#EF4444" />}
-                  <span>{micOn ? 'Mic Live' : 'Muted'}</span>
-                </button>
+              <button
+                onClick={() => setMicOn(!micOn)}
+                style={{
+                  background: micOn ? 'rgba(0, 166, 81, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                  border: `1px solid ${micOn ? 'rgba(0, 166, 81, 0.4)' : 'rgba(239, 68, 68, 0.4)'}`,
+                  color: micOn ? '#34D399' : '#F87171',
+                  borderRadius: '12px', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '6px',
+                  fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer'
+                }}
+              >
+                {micOn ? <Mic size={16} /> : <MicOff size={16} />}
+                <span>{micOn ? 'Mic On' : 'Muted'}</span>
+              </button>
 
-                <button
-                  onClick={() => setVideoOn(!videoOn)}
-                  className="btn-secondary"
-                  style={{
-                    fontSize: '0.78rem', padding: '8px 14px', gap: '6px',
-                    color: videoOn ? '#F8FAFC' : '#EF4444',
-                    borderColor: videoOn ? 'var(--border-card)' : 'rgba(239, 68, 68, 0.4)'
-                  }}
-                >
-                  {videoOn ? <Video size={14} color="#10B981" /> : <VideoOff size={14} color="#EF4444" />}
-                  <span>{videoOn ? 'Camera Live' : 'Camera Off'}</span>
-                </button>
+              <button
+                onClick={() => setVideoOn(!videoOn)}
+                style={{
+                  background: videoOn ? 'rgba(0, 166, 81, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                  border: `1px solid ${videoOn ? 'rgba(0, 166, 81, 0.4)' : 'rgba(239, 68, 68, 0.4)'}`,
+                  color: videoOn ? '#34D399' : '#F87171',
+                  borderRadius: '12px', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '6px',
+                  fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer'
+                }}
+              >
+                {videoOn ? <Video size={16} /> : <VideoOff size={16} />}
+                <span>{videoOn ? 'Cam On' : 'Cam Off'}</span>
+              </button>
 
-                <button
-                  onClick={() => setHandRaised(!handRaised)}
-                  style={{
-                    background: handRaised ? '#F59E0B' : 'rgba(255,255,255,0.06)',
-                    color: handRaised ? '#0F172A' : '#F8FAFC',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '10px',
-                    padding: '8px 14px',
-                    fontSize: '0.78rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                  }}
-                >
-                  <Hand size={14} />
-                  <span>{handRaised ? 'Hand Raised! ✋' : 'Raise Hand'}</span>
-                </button>
-              </div>
-
-              <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <ShieldCheck size={14} color="#10B981" />
-                <span>Encrypted Class Feed</span>
-              </div>
+              <button
+                onClick={() => setHandRaised(!handRaised)}
+                style={{
+                  background: handRaised ? 'rgba(245, 158, 11, 0.25)' : 'rgba(255, 255, 255, 0.05)',
+                  border: `1px solid ${handRaised ? '#F59E0B' : 'var(--border-subtle)'}`,
+                  color: handRaised ? '#F59E0B' : 'var(--text-secondary)',
+                  borderRadius: '12px', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '6px',
+                  fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer'
+                }}
+              >
+                <Hand size={16} />
+                <span>{handRaised ? 'Hand Raised ✋' : 'Raise Hand'}</span>
+              </button>
             </div>
 
           </div>
 
-          {/* Right Sidebar: Video & Chat */}
-          <div style={{ width: 'clamp(260px, 28vw, 320px)', flexShrink: 0, borderLeft: '1px solid var(--border-subtle)', background: 'rgba(8, 12, 20, 0.8)', display: 'flex', flexDirection: 'column' }}>
+          {/* Right Sidebar: Video Feeds & Live Chat */}
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.02)',
+            borderLeft: '1px solid var(--border-subtle)',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden'
+          }}>
             
-            {/* Camera Feeds */}
-            <div style={{ padding: '12px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: '10px', flexShrink: 0 }}>
+            {/* Top Video Stage (Teacher & Student) */}
+            <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', borderBottom: '1px solid var(--border-subtle)' }}>
               
-              {/* Teacher Tile */}
-              <div style={{ position: 'relative', height: '115px', borderRadius: '12px', overflow: 'hidden', border: '1.5px solid rgba(16, 185, 129, 0.4)' }}>
-                <img 
-                  src={effectiveTeacherAvatar} 
-                  alt={effectiveTeacherName} 
+              {/* Teacher Video Card */}
+              <div style={{
+                position: 'relative', height: '125px', borderRadius: '14px', overflow: 'hidden',
+                background: '#0F172A', border: '1px solid rgba(0, 166, 81, 0.3)'
+              }}>
+                <img
+                  src={effectiveTeacherAvatar}
+                  alt={effectiveTeacherName}
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
                 <div style={{
-                  position: 'absolute', bottom: '6px', left: '6px',
-                  background: 'rgba(0,0,0,0.8)', borderRadius: '6px', padding: '2px 8px',
-                  fontSize: '0.68rem', color: '#10B981', fontWeight: 700
+                  position: 'absolute', bottom: '6px', left: '8px',
+                  background: 'rgba(0,0,0,0.6)', padding: '2px 8px', borderRadius: '6px',
+                  fontSize: '0.72rem', color: '#fff', fontWeight: 700
                 }}>
-                  {effectiveTeacherName}
+                  👨‍🏫 {effectiveTeacherName} (Lead)
                 </div>
               </div>
 
-              {/* Student Tile */}
+              {/* Student Video Card */}
               <div style={{
-                position: 'relative', height: '115px', borderRadius: '12px', overflow: 'hidden',
-                border: '1px solid var(--border-card)', background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center'
+                position: 'relative', height: '125px', borderRadius: '14px', overflow: 'hidden',
+                background: '#0F172A', border: '1px solid rgba(56, 189, 248, 0.3)'
               }}>
-                {videoOn ? (
-                  <div style={{ color: '#38BDF8', fontWeight: 700, fontSize: '0.85rem' }}>
-                    {effectiveStudentName.split(' ')[0]} (Camera Live)
-                  </div>
-                ) : (
-                  <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                    <VideoOff size={18} />
-                    <span>Camera Off</span>
-                  </div>
-                )}
+                <img
+                  src="https://images.unsplash.com/photo-1543332164-6e82f355badc?w=400"
+                  alt={effectiveStudentName}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
                 <div style={{
-                  position: 'absolute', bottom: '6px', left: '6px',
-                  background: 'rgba(0,0,0,0.8)', borderRadius: '6px', padding: '2px 8px',
-                  fontSize: '0.68rem', color: '#F8FAFC'
+                  position: 'absolute', bottom: '6px', left: '8px',
+                  background: 'rgba(0,0,0,0.6)', padding: '2px 8px', borderRadius: '6px',
+                  fontSize: '0.72rem', color: '#fff', fontWeight: 700
                 }}>
-                  {effectiveStudentName.split(' ')[0]} (You)
+                  👦 {effectiveStudentName} (Learner)
                 </div>
               </div>
 
             </div>
 
-            {/* Chat Header */}
-            <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-              <span style={{ fontWeight: 700, color: '#F8FAFC', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <MessageSquare size={13} color="#10B981" />
-                <span>Live Discussion</span>
-              </span>
-              <span>1-on-1 Studio</span>
-            </div>
+            {/* In-Session Live Chat Stream */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--border-subtle)', fontSize: '0.76rem', color: '#34D399', fontWeight: 800, textTransform: 'uppercase' }}>
+                💬 Live Lesson Chat (Real-Time Sync)
+              </div>
 
-            {/* Messages */}
-            <div style={{ flex: 1, padding: '12px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {chatMessages.map(msg => (
-                <div 
-                  key={msg.id}
-                  style={{
-                    padding: '10px 12px',
-                    borderRadius: '10px',
-                    background: msg.isTeacher ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255, 255, 255, 0.04)',
-                    border: msg.isTeacher ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid var(--border-subtle)',
-                    fontSize: '0.78rem'
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px', fontWeight: 700, color: msg.isTeacher ? '#10B981' : '#38BDF8' }}>
-                    <span>{msg.sender}</span>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '0.68rem', fontWeight: 400 }}>{msg.time}</span>
+              <div style={{ flex: 1, overflowY: 'auto', padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {chatMessages.map((msg) => (
+                  <div
+                    key={msg.id}
+                    style={{
+                      background: msg.isTeacher ? 'rgba(0, 166, 81, 0.12)' : 'rgba(56, 189, 248, 0.12)',
+                      border: `1px solid ${msg.isTeacher ? 'rgba(0, 166, 81, 0.3)' : 'rgba(56, 189, 248, 0.3)'}`,
+                      borderRadius: '10px',
+                      padding: '8px 10px',
+                      fontSize: '0.78rem'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px', fontSize: '0.7rem' }}>
+                      <strong style={{ color: msg.isTeacher ? '#34D399' : '#38BDF8' }}>{msg.sender}</strong>
+                      <span style={{ color: 'var(--text-muted)' }}>{msg.time}</span>
+                    </div>
+                    <div style={{ color: '#F8FAFC' }}>{msg.text}</div>
                   </div>
-                  <div style={{ color: '#F8FAFC', lineHeight: 1.4 }}>{msg.text}</div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
 
-            {/* Input Form */}
-            <form onSubmit={handleSendMessage} style={{ padding: '10px 12px', borderTop: '1px solid var(--border-subtle)', display: 'flex', gap: '8px', flexShrink: 0 }}>
-              <input
-                type="text"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Ask teacher a question..."
-                style={{
-                  flex: 1, background: 'rgba(0,0,0,0.5)', border: '1px solid var(--border-card)',
-                  borderRadius: '10px', padding: '8px 12px', color: '#F8FAFC', fontSize: '0.78rem'
-                }}
-              />
-              <button
-                type="submit"
-                className="btn-primary"
-                style={{ padding: '8px 12px' }}
-              >
-                <Send size={13} />
-              </button>
-            </form>
+              {/* Chat Input */}
+              <form onSubmit={handleSendMessage} style={{ padding: '10px', borderTop: '1px solid var(--border-subtle)', display: 'flex', gap: '6px' }}>
+                <input
+                  type="text"
+                  placeholder="Ask a question or type math formula..."
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  style={{
+                    flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-card)',
+                    borderRadius: '8px', padding: '8px 10px', color: '#fff', fontSize: '0.8rem'
+                  }}
+                />
+                <button type="submit" className="btn-primary" style={{ padding: '8px 12px' }}>
+                  <Send size={14} />
+                </button>
+              </form>
+
+            </div>
 
           </div>
 

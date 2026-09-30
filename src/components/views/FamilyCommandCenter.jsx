@@ -397,7 +397,7 @@ export default function FamilyCommandCenter({
                   {isSubmitted && hw.studentSubmission && (
                     <div style={{ background: 'rgba(56, 189, 248, 0.06)', border: '1px solid rgba(56, 189, 248, 0.2)', borderRadius: '10px', padding: '8px 12px', fontSize: '0.78rem', marginBottom: '10px' }}>
                       <div style={{ color: '#38BDF8', fontWeight: 600 }}>
-                        📝 Liam's Submitted Solution ({hw.studentSubmission.submittedAt}):
+                        📝 Learner's Submitted Solution ({hw.studentSubmission.submittedAt}):
                       </div>
                       <div style={{ color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '2px' }}>
                         "{hw.studentSubmission.text.substring(0, 100)}..."

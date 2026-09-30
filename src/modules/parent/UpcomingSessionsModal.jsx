@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import SafetyGuaranteeModal from '../marketplace/SafetyGuaranteeModal';
+import LiveClassroomModal from '../learning/LiveClassroomModal';
 import { generateSessionIcs } from '../../services/calendarExport';
 import { bookingsService } from '../../services/homeworkTelemetryStore';
 import { 
@@ -19,6 +20,7 @@ export default function UpcomingSessionsModal({
   const [filter, setFilter] = useState('all');
   const [safetyTeacher, setSafetyTeacher] = useState(null);
   const [selectedSessionDetail, setSelectedSessionDetail] = useState(null);
+  const [selectedLiveClassroom, setSelectedLiveClassroom] = useState(null);
 
   const filtered = bookings.filter(b => {
     if (filter === 'virtual') return b.sessionType === 'virtual';
@@ -235,7 +237,7 @@ export default function UpcomingSessionsModal({
                           </span>
                           <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#E2E8F0' }}>
                             <User size={13} />
-                            <span>Learner: <strong>{session.studentName?.split(' ')[0] || 'Liam'}</strong></span>
+                            <span>Learner: <strong>{session.studentName?.split(' ')[0] || 'Learner'}</strong></span>
                           </span>
                         </div>
                       </div>
@@ -259,7 +261,7 @@ export default function UpcomingSessionsModal({
                         {isVirtual && (
                           <button
                             type="button"
-                            onClick={() => onJoinSession ? onJoinSession(session) : null}
+                            onClick={() => setSelectedLiveClassroom(session)}
                             className="btn-primary"
                             style={{ fontSize: '0.78rem', padding: '6px 14px', background: '#10B981', color: '#022c22', fontWeight: 800 }}
                           >
@@ -350,6 +352,18 @@ export default function UpcomingSessionsModal({
         </div>
 
       </div>
+      {selectedLiveClassroom && (
+        <LiveClassroomModal
+          isOpen={!!selectedLiveClassroom}
+          onClose={() => setSelectedLiveClassroom(null)}
+          session={selectedLiveClassroom}
+          sessionTitle={selectedLiveClassroom.focusSubject || 'Live Specialist Masterclass'}
+          teacherName={selectedLiveClassroom.tutorName}
+          tutorAvatar={selectedLiveClassroom.tutorAvatar}
+          studentName={selectedLiveClassroom.studentName}
+        />
+      )}
+
       <SafetyGuaranteeModal isOpen={!!safetyTeacher} teacher={safetyTeacher} onClose={() => setSafetyTeacher(null)} />
     </div>
   );

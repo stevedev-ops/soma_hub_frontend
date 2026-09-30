@@ -17,7 +17,7 @@ export default function HolidayTuitionSprint() {
     'kisw_sarufi': true,
     'eng_adjectives': true
   });
-  const [customParentNotes, setCustomParentNotes] = useState('Liam needs extra confidence in fractions and Swahili tenses before Term 2.');
+  const [customParentNotes, setCustomParentNotes] = useState('Learner needs extra confidence in fractions and Swahili tenses before Term 2.');
   const [savedPlanToast, setSavedPlanToast] = useState(false);
   const [activatedToLearnerToast, setActivatedToLearnerToast] = useState(false);
   const [completedCustomDays, setCompletedCustomDays] = useState({ '1_0': true });
@@ -112,8 +112,8 @@ export default function HolidayTuitionSprint() {
       topics: activeSelectedTopics,
       notes: customParentNotes,
       activatedAt: new Date().toISOString(),
-      studentId: 'liam',
-      studentName: 'Liam Kariuki'
+      studentId: 'mike',
+      studentName: 'Mike Kariuki'
     };
     localStorage.setItem('somahome_active_holiday_sprint', JSON.stringify(sprintPayload));
     window.dispatchEvent(new CustomEvent('somahome_holiday_sprint_updated', { detail: sprintPayload }));
@@ -122,7 +122,7 @@ export default function HolidayTuitionSprint() {
   };
 
   const generateWhatsAppPlan = () => {
-    let msg = `*🏡 SomaHome Kenya: Custom Holiday Tuition Plan for Liam*\n`;
+    let msg = `*🏡 SomaHome Kenya: Custom Holiday Tuition Plan for Learner*\n`;
     msg += `*Duration:* ${sprintDurationWeeks} Weeks (${dailyTargetMins} mins/day)\n`;
     msg += `*Parent Focus:* ${customParentNotes}\n\n`;
     msg += `*Target Weakness Modules:*\n`;
@@ -176,7 +176,7 @@ export default function HolidayTuitionSprint() {
             Custom Holiday Catch-Up &amp; Weakness Sprint
           </h1>
           <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem', maxWidth: '640px' }}>
-            Select the exact Math, Swahili, Science, or English topics your learner needs to reinforce. SomaHome will auto-sync bonus quests directly onto Liam's learner dashboard.
+            Select the exact Math, Swahili, Science, or English topics your learner needs to reinforce. SomaHome will auto-sync bonus quests directly onto the learner's dashboard.
           </p>
         </div>
 
@@ -232,7 +232,7 @@ export default function HolidayTuitionSprint() {
           animation: 'fadeIn 0.3s ease'
         }}>
           <CheckCircle2 size={18} />
-          <span>✓ Holiday Catch-Up Sprint activated! Bonus weakness quests are now live on Liam's Learner Questboard.</span>
+          <span>✓ Holiday Catch-Up Sprint activated! Bonus weakness quests are now live on the Learner Questboard.</span>
         </div>
       )}
 

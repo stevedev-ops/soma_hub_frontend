@@ -1,6 +1,7 @@
 import { useAuth } from '../../context/AuthContext';
 import React, { useState, useEffect } from 'react';
 import StudentTeacherCallModal from '../../modules/learning/StudentTeacherCallModal';
+import LiveClassroomModal from '../../modules/learning/LiveClassroomModal';
 import { 
   Award, CheckCircle, Smartphone, Calendar, Clock, Star, 
   MessageSquare, ShieldCheck, Plus, Video, Send, CheckCircle2, 
@@ -14,6 +15,7 @@ import { cbaRubricStore } from '../../services/cbaRubricStore';
 export default function TutorDashboard({ onNavigateToCreator }) {
   const { currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState('schedule_manager');
+  const [selectedLiveSession, setSelectedLiveSession] = useState(null);
   const [bookedSessions, setBookedSessions] = useState(() => bookingsService.getForTeacher(currentUser?.name || '', currentUser?.id));
 
   useEffect(() => {
@@ -498,16 +500,14 @@ export default function TutorDashboard({ onNavigateToCreator }) {
 
                       <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid var(--border-subtle)', paddingTop: '10px' }}>
                         {isVirtual ? (
-                          <a
-                            href="https://meet.jit.si/somahome-private-tutoring"
-                            target="_blank"
-                            rel="noopener noreferrer"
+                          <button
+                            onClick={() => setSelectedLiveSession(session)}
                             className="btn-primary"
                             style={{ flex: 1, fontSize: '0.78rem', padding: '7px', justifyContent: 'center', gap: '6px', background: '#00A651' }}
                           >
                             <Video size={14} />
                             <span>Launch Live Classroom</span>
-                          </a>
+                          </button>
                         ) : (
                           <button
                             onClick={() => alert(`🏡 Scheduled Home Visit\n\nStudent: ${session.studentName}\nParent Contact: Paid via M-Pesa (${session.receipt})\nLocation: ${session.estateAddress}\nSubject: ${session.focusSubject}\nInstructions: ${session.parentNotes || 'None'}`)}
@@ -1124,6 +1124,18 @@ export default function TutorDashboard({ onNavigateToCreator }) {
       )}
 
       {/* 1:1 Call Modal */}
+      {selectedLiveSession && (
+        <LiveClassroomModal
+          isOpen={!!selectedLiveSession}
+          onClose={() => setSelectedLiveSession(null)}
+          session={selectedLiveSession}
+          sessionTitle={selectedLiveSession.focusSubject || 'Live Specialist Masterclass'}
+          teacherName={currentUser?.name || selectedLiveSession.tutorName}
+          tutorAvatar={currentUser?.avatar || selectedLiveSession.tutorAvatar}
+          studentName={selectedLiveSession.studentName || 'Learner'}
+        />
+      )}
+
       {activeCallLearner && (
         <StudentTeacherCallModal
           isOpen={!!activeCallLearner}
