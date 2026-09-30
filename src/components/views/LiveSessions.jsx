@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Video, Calendar, Clock, PlayCircle, ShieldCheck, Users, Sparkles, AlertCircle, BookOpen, ArrowRight } from 'lucide-react';
+import { 
+  Video, Calendar, Clock, PlayCircle, ShieldCheck, Users, 
+  Sparkles, AlertCircle, BookOpen, ArrowRight, Gamepad2, Compass, Award
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { bookingsService } from '../../services/homeworkTelemetryStore';
 import LiveClassroomModal from '../../modules/learning/LiveClassroomModal';
 
-export default function LiveSessions({ onGoToHome }) {
+export default function LiveSessions({ onGoToHome, onGoToReading, onGoToQuiz }) {
   const { currentUser } = useAuth();
   const [subjectFilter, setSubjectFilter] = useState('ALL');
   const [selectedLiveSession, setSelectedLiveSession] = useState(null);
@@ -12,6 +15,7 @@ export default function LiveSessions({ onGoToHome }) {
   const isStudent = currentUser?.role === 'student';
   const isTeacher = currentUser?.role === 'tutor' || currentUser?.role === 'teacher';
   const studentName = currentUser?.name || '';
+  const displayName = currentUser?.name ? currentUser.name.split(' ')[0] : 'Learner';
 
   // Load real sessions from reactive bookings store
   const [bookings, setBookings] = useState(() => {
@@ -49,21 +53,21 @@ export default function LiveSessions({ onGoToHome }) {
     ? virtualSessions
     : virtualSessions.filter((s) => (s.focusSubject || s.tutorSubject || '').toLowerCase().includes(subjectFilter.toLowerCase()));
 
-  const displayName = currentUser?.name ? currentUser.name.split(' ')[0] : 'Learner';
-
   return (
     <div>
-      {/* Header & Filter */}
+      {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '28px', flexWrap: 'wrap', gap: '20px' }}>
         <div>
-          <span className="glass-pill" style={{ color: '#EF4444', border: '1px solid rgba(239,68,68,0.3)', marginBottom: '8px', display: 'inline-block' }}>
-            🔴 Outschool-Style Embedded Live Virtual Classroom
+          <span className="glass-pill" style={{ color: '#EF4444', border: '1px solid rgba(239,68,68,0.3)', marginBottom: '8px', display: 'inline-block', fontSize: '0.74rem' }}>
+            🔴 Live Video Classroom
           </span>
-          <h2 style={{ fontSize: '1.6rem', margin: 0, fontWeight: 800 }}>
-            Live Teacher Masterclasses & Pod Sessions
+          <h2 style={{ fontSize: '1.6rem', margin: 0, fontWeight: 800, color: '#F8FAFC' }}>
+            {isStudent ? '🎒 Live Classrooms & Study Pods' : 'Live Teacher Masterclasses & Pod Sessions'}
           </h2>
           <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0 0', fontSize: '0.92rem' }}>
-            Fully integrated live virtual studio: interactive collaborative whiteboard, encrypted video tiles, student hand-raising & live chat.
+            {isStudent 
+              ? 'Join live video lessons with your teacher, draw on the interactive whiteboard, and learn together!'
+              : 'Fully integrated live virtual studio: interactive collaborative whiteboard, encrypted video tiles, student hand-raising & live chat.'}
           </p>
         </div>
 
@@ -93,50 +97,101 @@ export default function LiveSessions({ onGoToHome }) {
         <div
           className="glass-panel"
           style={{
-            padding: '48px 24px',
+            padding: '44px 28px',
             textAlign: 'center',
-            borderRadius: '20px',
+            borderRadius: '24px',
             border: '1.5px dashed rgba(255,255,255,0.12)',
-            background: 'rgba(15, 23, 42, 0.4)',
-            maxWidth: '680px',
+            background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.6) 0%, rgba(11, 17, 30, 0.8) 100%)',
+            maxWidth: '660px',
             margin: '20px auto'
           }}
         >
           <div
             style={{
-              width: '64px',
-              height: '64px',
+              width: '68px',
+              height: '68px',
               borderRadius: '50%',
-              background: 'rgba(56, 189, 248, 0.12)',
-              border: '1.5px solid rgba(56, 189, 248, 0.3)',
+              background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.2) 0%, rgba(16, 185, 129, 0.2) 100%)',
+              border: '1.5px solid rgba(56, 189, 248, 0.4)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               margin: '0 auto 18px',
-              color: '#38BDF8'
+              fontSize: '1.8rem',
+              boxShadow: '0 8px 24px rgba(56, 189, 248, 0.2)'
             }}
           >
-            <Video size={28} />
+            🎒
           </div>
 
-          <h3 style={{ fontSize: '1.3rem', margin: '0 0 8px 0', color: '#F8FAFC', fontWeight: 700 }}>
-            No Live Classes Scheduled for {displayName} Yet
+          <h3 style={{ fontSize: '1.35rem', margin: '0 0 10px 0', color: '#F8FAFC', fontWeight: 800 }}>
+            {isStudent 
+              ? `No Live Classes Right Now, ${displayName}! 🌟` 
+              : `No Live Classes Scheduled for ${displayName} Yet`}
           </h3>
 
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.6, maxWidth: '520px', margin: '0 auto 24px' }}>
-            When a parent books a verified specialist tutor in the Marketplace or a facilitator schedules a pod masterclass, your interactive virtual classroom link and whiteboard will appear here in real-time.
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.92rem', lineHeight: 1.65, maxWidth: '520px', margin: '0 auto 24px' }}>
+            {isStudent 
+              ? `You don't have any live video lessons scheduled at this moment. When your teacher or parent schedules a live class, your join button and interactive whiteboard will appear right here!`
+              : `When a parent books a verified specialist tutor in the Marketplace or a facilitator schedules a pod masterclass, your interactive virtual classroom link and whiteboard will appear here in real-time.`}
           </p>
 
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
-            <span className="glass-pill" style={{ fontSize: '0.76rem', color: '#10B981', border: '1px solid rgba(16,185,129,0.3)', padding: '6px 12px' }}>
-              <ShieldCheck size={14} style={{ display: 'inline', marginRight: '4px' }} />
-              TSC & DCI Verified Facilitators
-            </span>
-            <span className="glass-pill" style={{ fontSize: '0.76rem', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.3)', padding: '6px 12px' }}>
-              <Sparkles size={14} style={{ display: 'inline', marginRight: '4px' }} />
-              1-on-1 & Small Pods
-            </span>
-          </div>
+          {/* Child-Friendly Exploration Shortcuts */}
+          {isStudent && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center', marginTop: '12px' }}>
+              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#38BDF8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                While you wait, try these fun activities:
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                {onGoToHome && (
+                  <button
+                    onClick={onGoToHome}
+                    className="btn-primary"
+                    style={{ fontSize: '0.82rem', padding: '9px 16px', gap: '6px', background: '#00A651', fontWeight: 700 }}
+                  >
+                    <Compass size={15} />
+                    <span>Explore Today's Quests</span>
+                  </button>
+                )}
+
+                {onGoToQuiz && (
+                  <button
+                    onClick={onGoToQuiz}
+                    className="btn-secondary"
+                    style={{ fontSize: '0.82rem', padding: '9px 16px', gap: '6px', color: '#F59E0B', borderColor: 'rgba(245, 158, 11, 0.4)' }}
+                  >
+                    <Gamepad2 size={15} />
+                    <span>Play Quiz Arcade</span>
+                  </button>
+                )}
+
+                {onGoToReading && (
+                  <button
+                    onClick={onGoToReading}
+                    className="btn-secondary"
+                    style={{ fontSize: '0.82rem', padding: '9px 16px', gap: '6px', color: '#38BDF8', borderColor: 'rgba(56, 189, 248, 0.4)' }}
+                  >
+                    <BookOpen size={15} />
+                    <span>Story Reading Room</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {!isStudent && (
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
+              <span className="glass-pill" style={{ fontSize: '0.76rem', color: '#10B981', border: '1px solid rgba(16,185,129,0.3)', padding: '6px 12px' }}>
+                <ShieldCheck size={14} style={{ display: 'inline', marginRight: '4px' }} />
+                TSC & DCI Verified Facilitators
+              </span>
+              <span className="glass-pill" style={{ fontSize: '0.76rem', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.3)', padding: '6px 12px' }}>
+                <Sparkles size={14} style={{ display: 'inline', marginRight: '4px' }} />
+                1-on-1 & Small Pods
+              </span>
+            </div>
+          )}
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '24px' }}>

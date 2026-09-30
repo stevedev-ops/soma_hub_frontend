@@ -55,7 +55,11 @@ export default function StudentModule({ activeTab, setActiveTab }) {
       )}
 
       {activeTab === 'live' && (
-        <LiveSessions />
+        <LiveSessions 
+          onGoToHome={() => setActiveTab('student_home')}
+          onGoToReading={() => setActiveTab('reading')}
+          onGoToQuiz={() => setActiveTab('tests')}
+        />
       )}
     </div>
   );
