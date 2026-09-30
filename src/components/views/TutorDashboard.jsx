@@ -1,3 +1,4 @@
+import { useAuth } from '../../context/AuthContext';
 import React, { useState, useEffect } from 'react';
 import StudentTeacherCallModal from '../../modules/learning/StudentTeacherCallModal';
 import { 
@@ -11,7 +12,21 @@ import { planningAuthorityStore } from '../../services/planningAuthorityStore';
 import { cbaRubricStore } from '../../services/cbaRubricStore';
 
 export default function TutorDashboard({ onNavigateToCreator }) {
-  const [activeTab, setActiveTab] = useState('schedule_manager'); // 'schedule_manager' | 'pods' | 'marking' | 'schedule_live' | 'students' | 'earnings'
+  const { currentUser } = useAuth();
+  const [activeTab, setActiveTab] = useState('schedule_manager');
+  const [bookedSessions, setBookedSessions] = useState(() => bookingsService.getForTeacher(currentUser?.name || '', currentUser?.id));
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setBookedSessions(bookingsService.getForTeacher(currentUser?.name || '', currentUser?.id));
+    };
+    window.addEventListener('somahome_bookings_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('somahome_bookings_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, [currentUser?.name, currentUser?.id]); // 'schedule_manager' | 'pods' | 'marking' | 'schedule_live' | 'students' | 'earnings'
   
   // Teacher Pods & Students State
   const [assignedStudents, setAssignedStudents] = useState(() => planningAuthorityStore.getTeacherStudents('mercy'));
@@ -370,6 +385,99 @@ export default function TutorDashboard({ onNavigateToCreator }) {
                 </button>
               ))}
             </div>
+          </div>
+
+                    {/* CONFIRMED 1-ON-1 PARENT BOOKINGS & HOME VISITS */}
+          <div className="glass-panel" style={{ padding: '22px', borderRadius: '20px', marginBottom: '22px', border: '1.5px solid rgba(0, 166, 81, 0.4)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+              <div>
+                <div style={{ fontSize: '0.72rem', color: '#34D399', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  Live Client Bookings
+                </div>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 900, margin: '2px 0 0 0', color: '#FFFFFF' }}>
+                  Confirmed 1-on-1 Classes & Home Visits ({bookedSessions.length})
+                </h3>
+              </div>
+              <span className="glass-pill" style={{ background: '#00A651', color: '#FFF', fontSize: '0.74rem', fontWeight: 700 }}>
+                {bookedSessions.length} Active Sessions
+              </span>
+            </div>
+
+            {bookedSessions.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)', fontSize: '0.86rem' }}>
+                No private bookings scheduled for you yet. Your availability is live in the Parent Marketplace.
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '14px' }}>
+                {bookedSessions.map((session) => {
+                  const isVirtual = session.sessionType === 'virtual' || !session.sessionType;
+                  return (
+                    <div
+                      key={session.id}
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.03)',
+                        border: '1px solid var(--border-subtle)',
+                        borderRadius: '14px',
+                        padding: '16px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        gap: '12px'
+                      }}
+                    >
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                          <span className="glass-pill" style={{ fontSize: '0.7rem', color: isVirtual ? '#60A5FA' : '#34D399', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            {isVirtual ? '💻 Virtual Classroom' : '🏡 Home Visit'}
+                          </span>
+                          <span style={{ fontSize: '0.74rem', color: '#F59E0B', fontWeight: 700 }}>
+                            KES {(session.amount || 2250).toLocaleString()} Paid
+                          </span>
+                        </div>
+
+                        <div style={{ fontSize: '0.98rem', fontWeight: 800, color: '#FFFFFF', marginBottom: '4px' }}>
+                          {session.focusSubject}
+                        </div>
+
+                        <div style={{ fontSize: '0.82rem', color: '#34D399', fontWeight: 700, marginBottom: '6px' }}>
+                          👤 Student: <strong>{session.studentName}</strong>
+                        </div>
+
+                        <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                          <div>📅 Date & Time: {session.date} • {session.timeSlot}</div>
+                          <div>📍 Location: {session.estateAddress || 'Kilimani, Nairobi'}</div>
+                          {session.parentNotes && <div>📝 Parent Note: "{session.parentNotes}"</div>}
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid var(--border-subtle)', paddingTop: '10px' }}>
+                        {isVirtual ? (
+                          <a
+                            href="https://meet.jit.si/somahome-private-tutoring"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn-primary"
+                            style={{ flex: 1, fontSize: '0.78rem', padding: '7px', justifyContent: 'center', gap: '6px', background: '#00A651' }}
+                          >
+                            <Video size={14} />
+                            <span>Launch Live Classroom</span>
+                          </a>
+                        ) : (
+                          <button
+                            onClick={() => alert(`🏡 Scheduled Home Visit\n\nStudent: ${session.studentName}\nParent Contact: Paid via M-Pesa (${session.receipt})\nLocation: ${session.estateAddress}\nSubject: ${session.focusSubject}\nInstructions: ${session.parentNotes || 'None'}`)}
+                            className="btn-secondary"
+                            style={{ flex: 1, fontSize: '0.78rem', padding: '7px', justifyContent: 'center', gap: '6px', color: '#34D399', borderColor: 'rgba(0,166,81,0.4)' }}
+                          >
+                            <MapPin size={14} />
+                            <span>View Address & Notes</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Schedule Slots Grid */}

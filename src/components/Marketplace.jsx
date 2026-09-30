@@ -122,18 +122,18 @@ export default function Marketplace({ tutors: initialTutors, pods, onNavigateTab
     /* Job claimed and confirmed in schedule */
   }; // my_bookings, tutors, pods
 
-  // Persistent bookings list
-  const [bookings, setBookings] = useState(() => {
-    const saved = localStorage.getItem('somahome_client_bookings_v2');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
-    }
-    return INITIAL_BOOKINGS;
-  });
+    // Reactive bookings list from centralized bookingsService
+  const [bookings, setBookings] = useState(() => bookingsService.getAll());
 
   useEffect(() => {
-    localStorage.setItem('somahome_client_bookings_v2', JSON.stringify(bookings));
-  }, [bookings]);
+    const handleSync = () => setBookings(bookingsService.getAll());
+    window.addEventListener('somahome_bookings_updated', handleSync);
+    window.addEventListener('storage', handleSync);
+    return () => {
+      window.removeEventListener('somahome_bookings_updated', handleSync);
+      window.removeEventListener('storage', handleSync);
+    };
+  }, []);
 
   // Modal states
   const [selectedTutorForBooking, setSelectedTutorForBooking] = useState(null);

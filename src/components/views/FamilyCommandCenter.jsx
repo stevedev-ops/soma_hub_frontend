@@ -36,15 +36,21 @@ export default function FamilyCommandCenter({
   const [telemetry, setTelemetry] = useState(() => telemetryService.getTelemetry(childrenList?.[0]?.name || ''));
   const [homeworkList, setHomeworkList] = useState(() => homeworkService.getAll());
 
-  useEffect(() => {
+    useEffect(() => {
     const handleSync = () => {
       setTelemetry(telemetryService.getTelemetry(childrenList?.[0]?.name || ''));
       setHomeworkList(homeworkService.getAll());
+      try {
+        const b = localStorage.getItem('somahome_client_bookings_v2');
+        if (b) setBookingsList(JSON.parse(b));
+      } catch {}
     };
     window.addEventListener('storage', handleSync);
+    window.addEventListener('somahome_bookings_updated', handleSync);
     const interval = setInterval(handleSync, 2000);
     return () => {
       window.removeEventListener('storage', handleSync);
+      window.removeEventListener('somahome_bookings_updated', handleSync);
       clearInterval(interval);
     };
   }, []);

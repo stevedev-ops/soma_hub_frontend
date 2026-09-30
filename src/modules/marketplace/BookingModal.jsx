@@ -13,6 +13,12 @@ const INSTRUCTION_PRESETS = [
   'Custom note (type below)...'
 ];
 
+const DEFAULT_CHILDREN = [
+  { id: 'liam', name: 'Liam Kariuki', grade: 'Grade 4 (CBC)', curriculum: 'CBC' },
+  { id: 'maya', name: 'Maya Kariuki', grade: 'Grade 2 (Cambridge)', curriculum: 'Cambridge' },
+  { id: 'mike', name: 'Mike Kariuki', grade: 'PP2 Playgroup (CBC)', curriculum: 'CBC' }
+];
+
 export default function BookingModal({ tutor, isOpen, onClose, onBookingSuccess }) {
   const { currentUser } = useAuth();
   const [step, setStep] = useState('details'); // details -> mpesa -> confirmed
@@ -23,7 +29,29 @@ export default function BookingModal({ tutor, isOpen, onClose, onBookingSuccess 
   });
   const [timeSlot, setTimeSlot] = useState('10:00 AM - 11:30 AM');
   const [sessionType, setSessionType] = useState('in_person'); // in_person or virtual
-  const [studentName, setStudentName] = useState(currentUser?.role === 'parent' ? 'Liam (Grade 4 CBC)' : 'Learner');
+  
+  // Enrolled children roster
+  const [enrolledChildren, setEnrolledChildren] = useState(() => {
+    try {
+      const saved = localStorage.getItem('somahome_parent_children_v3');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+      if (currentUser?.children && Array.isArray(currentUser.children) && currentUser.children.length > 0) {
+        return currentUser.children;
+      }
+    } catch {}
+    return DEFAULT_CHILDREN;
+  });
+
+  const [selectedChildId, setSelectedChildId] = useState(() => {
+    return enrolledChildren[0]?.id || 'mike';
+  });
+  const [studentName, setStudentName] = useState(() => {
+    return enrolledChildren[0]?.name || 'Mike Kariuki';
+  });
+  const [isCustomStudent, setIsCustomStudent] = useState(false);
   const [bookingCounty, setBookingCounty] = useState('Nairobi');
   const [bookingEstate, setBookingEstate] = useState('Kilimani');
   const [bookingCourt, setBookingCourt] = useState('');
@@ -34,6 +62,32 @@ export default function BookingModal({ tutor, isOpen, onClose, onBookingSuccess 
   const [isProcessing, setIsProcessing] = useState(false);
   const [mpesaReceipt, setMpesaReceipt] = useState('');
   const [calendarAdded, setCalendarAdded] = useState(false);
+
+    const handleSelectChild = (childId) => {
+    if (childId === 'custom') {
+      setIsCustomStudent(true);
+      setSelectedChildId('custom');
+      setStudentName('');
+    } else {
+      setIsCustomStudent(false);
+      setSelectedChildId(childId);
+      const child = enrolledChildren.find(c => String(c.id) === String(childId));
+      if (child) {
+        setStudentName(child.name);
+        const g = (child.grade || '').toLowerCase();
+        if (g.includes('pp2') || g.includes('playgroup') || child.name.toLowerCase().includes('mike')) {
+          setFocusSubject('PP2 Early Learning: Motor Skills, Numbers & Color Sorting');
+          setParentNotes('Please bring hands-on playgroup counters, coloring sheets and sensory blocks.');
+        } else if (g.includes('grade 2') || g.includes('cambridge') || child.name.toLowerCase().includes('maya')) {
+          setFocusSubject('Cambridge Stage 2: Phonics & Reading Comprehension');
+          setParentNotes('Help build foundational reading confidence and phonics.');
+        } else {
+          setFocusSubject('Grade 4 CBC Mathematics: Fractions & Decimals');
+          setParentNotes('Please bring tangible fraction circles and CBC practical counters.');
+        }
+      }
+    }
+  };
 
   if (!isOpen || !tutor) return null;
 
@@ -63,21 +117,24 @@ export default function BookingModal({ tutor, isOpen, onClose, onBookingSuccess 
         const receipt = 'SKM' + Math.floor(100000 + Math.random() * 900000);
         setMpesaReceipt(receipt);
         setStep('confirmed');
-        const newBooking = {
+                        const newBooking = {
           id: 'BKG-' + Math.floor(1000 + Math.random() * 9000),
           tutorId: tutor.id,
           tutorName: tutor.full_name,
-          tutorAvatar: tutor.avatar || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200',
-          studentName,
+          tutorAvatar: tutor.avatar_url || tutor.avatar || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200',
+          studentId: selectedChildId || 'mike',
+          studentName: studentName || 'Mike Kariuki',
           date,
           timeSlot,
           sessionType,
           estateAddress,
           focusSubject,
+          parentNotes,
           amount: sessionTotal,
           receipt,
           status: 'Confirmed',
-          isLiveNow: true
+          isLiveNow: true,
+          createdAt: new Date().toISOString()
         };
         bookingsService.addBooking(newBooking);
         telemetryService.logActiveSession(
@@ -341,16 +398,86 @@ export default function BookingModal({ tutor, isOpen, onClose, onBookingSuccess 
 
             {/* Student & Estate Location */}
             <div style={{ display: 'grid', gridTemplateColumns: sessionType === 'in_person' ? '1fr 1fr' : '1fr', gap: '12px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '6px' }}>
-                  Student Name:
-                </label>
+                            <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700 }}>
+                    🎓 Select Enrolled Learner:
+                  </label>
+                  <span style={{ fontSize: '0.7rem', color: '#10B981', fontWeight: 600 }}>
+                    {isCustomStudent ? 'Custom Name' : `${enrolledChildren.length} Enrolled`}
+                  </span>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '6px', marginBottom: '8px' }}>
+                  {enrolledChildren.map((child) => {
+                    const isSelected = !isCustomStudent && (String(selectedChildId) === String(child.id) || studentName.toLowerCase().includes(child.name.toLowerCase().split(' ')[0]));
+                    const isMike = child.name.toLowerCase().includes('mike');
+                    const isMaya = child.name.toLowerCase().includes('maya');
+
+                    return (
+                      <button
+                        type="button"
+                        key={child.id}
+                        onClick={() => handleSelectChild(child.id)}
+                        style={{
+                          padding: '7px 6px',
+                          borderRadius: '10px',
+                          border: isSelected ? '2px solid #00A651' : '1px solid var(--border-subtle)',
+                          background: isSelected ? 'rgba(0, 166, 81, 0.18)' : 'rgba(255,255,255,0.03)',
+                          color: isSelected ? '#34D399' : 'var(--text-secondary)',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: '2px',
+                          textAlign: 'center',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        <span style={{ fontSize: '1.1rem' }}>{isMike ? '👦' : isMaya ? '👧' : '👦'}</span>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 800, color: isSelected ? '#FFFFFF' : 'var(--text-primary)' }}>
+                          {child.name.split(' ')[0]}
+                        </span>
+                        <span style={{ fontSize: '0.65rem', color: isSelected ? '#34D399' : 'var(--text-muted)' }}>
+                          {child.grade ? child.grade.split('(')[0] : 'Learner'}
+                        </span>
+                      </button>
+                    );
+                  })}
+
+                  <button
+                    type="button"
+                    onClick={() => handleSelectChild('custom')}
+                    style={{
+                      padding: '7px 6px',
+                      borderRadius: '10px',
+                      border: isCustomStudent ? '2px solid #00A651' : '1px solid var(--border-subtle)',
+                      background: isCustomStudent ? 'rgba(0, 166, 81, 0.18)' : 'rgba(255,255,255,0.03)',
+                      color: isCustomStudent ? '#34D399' : 'var(--text-secondary)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '2px',
+                      textAlign: 'center'
+                    }}
+                  >
+                    <span style={{ fontSize: '1.1rem' }}>✏️</span>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 800 }}>Other</span>
+                    <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Custom</span>
+                  </button>
+                </div>
+
                 <input
                   type="text"
                   value={studentName}
-                  onChange={(e) => setStudentName(e.target.value)}
+                  onChange={(e) => {
+                    setStudentName(e.target.value);
+                    setIsCustomStudent(true);
+                  }}
                   className="custom-input"
-                  style={{ width: '100%' }}
+                  style={{ width: '100%', fontSize: '0.82rem' }}
+                  placeholder="Learner Full Name (e.g. Mike Kariuki)"
                   required
                 />
               </div>
