@@ -254,7 +254,7 @@ export const bookingsService = {
         return false;
       });
 
-      // Crucial: If specific match found return it, otherwise return all active bookings so any educator view can see parent bookings
+      // Always return matched if found, or active if single tutor platform
       return matched.length > 0 ? matched : active;
     } catch {
       return [];

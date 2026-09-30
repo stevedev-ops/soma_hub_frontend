@@ -25,7 +25,8 @@ export default function LiveSessions({ onGoToHome, onGoToReading, onGoToQuiz }) 
     if (isStudent) {
       return bookingsService.getForStudent(studentName, currentUser?.id || currentUser?.student_id);
     } else if (isTeacher) {
-      return bookingsService.getForTeacher(currentUser?.name || '', currentUser?.id);
+      const tBookings = bookingsService.getForTeacher(currentUser?.name || '', currentUser?.id);
+      return tBookings.length > 0 ? tBookings : bookingsService.getAll().filter(b => b.status !== 'Cancelled');
     }
     return bookingsService.getAll();
   });
