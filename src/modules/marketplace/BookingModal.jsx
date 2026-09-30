@@ -2,6 +2,7 @@
 import { X, Calendar, Clock, MapPin, Video, CheckCircle2, ShieldCheck, Smartphone, Sparkles, Download, ArrowLeft, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { bookingsService, telemetryService } from '../../services/homeworkTelemetryStore';
+import { ALL_COUNTIES, getEstatesForCounty } from '../../services/kenyaCountiesAndEstates';
 
 export default function BookingModal({ tutor, isOpen, onClose, onBookingSuccess }) {
   const { currentUser } = useAuth();
