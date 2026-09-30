@@ -1,16 +1,12 @@
 ﻿import React, { useState, useEffect } from 'react';
-import { 
-  Users, Calendar, Award, BookOpen, Clock, Video, MapPin, Plus, 
-  ArrowRight, ShieldCheck, CheckCircle2, AlertCircle, Sparkles, DollarSign, 
-  Activity, FileText, Compass, Eye, CheckCircle, ExternalLink 
-} from 'lucide-react';
+import { Activity, AlertCircle, ArrowRight, Award, BookOpen, Calendar, CheckCircle, CheckCircle2, Clock, Compass, DollarSign, Edit2, ExternalLink, Eye, FileText, MapPin, Plus, Settings, ShieldCheck, Sparkles, Trash2, Users, Video } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { homeworkService, telemetryService } from '../../services/homeworkTelemetryStore';
 import StudentActivityTelemetryModal from '../../modules/parent/StudentActivityTelemetryModal';
 import UpcomingSessionsModal from '../../modules/parent/UpcomingSessionsModal';
 import ManageChildModal from '../../modules/parent/ManageChildModal';
 import VirtualClassroomModal from '../VirtualClassroomModal';
-import { Settings, Edit2, Trash2 } from 'lucide-react';
+
 import TutorHomeworkOverviewModal from '../../modules/parent/TutorHomeworkOverviewModal';
 
 const DEFAULT_PARENT_BOOKINGS = [];

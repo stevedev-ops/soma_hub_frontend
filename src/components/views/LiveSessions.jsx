@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Video, Calendar, Clock, PlayCircle, ShieldCheck, Users, 
+  Video, Calendar, Clock, PlayCircle, ShieldCheck, Users, MapPin, 
   Sparkles, AlertCircle, BookOpen, ArrowRight, Gamepad2, Compass, Award
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
