@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import SafetyGuaranteeModal from '../marketplace/SafetyGuaranteeModal';
+import { generateSessionIcs } from '../../services/calendarExport';
 import { 
   X, Calendar, Clock, Video, MapPin, ShieldCheck, User, 
   ExternalLink, Phone, ArrowRight, CheckCircle2, AlertCircle, Plus 
@@ -14,7 +15,9 @@ export default function UpcomingSessionsModal({
 }) {
   if (!isOpen) return null;
 
-  const [filter, setFilter] = useState('all'); // 'all' | 'virtual' | 'in_person'
+  const [filter, setFilter] = useState('all');
+  const [safetyTeacher, setSafetyTeacher] = useState(null);
+  const [selectedSessionDetail, setSelectedSessionDetail] = useState(null);
 
   const filtered = bookings.filter(b => {
     if (filter === 'virtual') return b.sessionType === 'virtual';

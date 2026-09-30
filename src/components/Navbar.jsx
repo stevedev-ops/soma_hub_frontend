@@ -1,7 +1,9 @@
 import React from 'react';
+import { useAuth } from '../context/AuthContext';
 import { BookOpen, Calendar, Award, Users, ShoppingBag, Printer, Sparkles, Smartphone } from 'lucide-react';
 
 export default function Navbar({ activeTab, setActiveTab, activeStudent, setActiveStudent, onOpenPrintable }) {
+  const { currentUser } = useAuth();
   return (
     <header className="glass-panel" style={{ margin: '16px auto', maxWidth: '1280px', padding: '12px 24px', borderRadius: '16px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
