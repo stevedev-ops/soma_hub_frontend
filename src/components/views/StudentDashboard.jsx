@@ -13,6 +13,7 @@ import { homeworkService, bookingsService, telemetryService } from '../../servic
 import { planningAuthorityStore } from '../../services/planningAuthorityStore';
 
 export default function StudentDashboard({ onGoToReading, onGoToQuiz, onGoToChat }) {
+  const [selectedLiveSession, setSelectedLiveSession] = useState(null);
   const { currentUser } = useAuth();
   const [streak, setStreak] = useState(15);
   const [xp, setXp] = useState(1450);
@@ -47,11 +48,12 @@ export default function StudentDashboard({ onGoToReading, onGoToQuiz, onGoToChat
   const [activeHwModal, setActiveHwModal] = useState(null);
 
   // Booked sessions for Liam (Live Reactive)
-  const [bookedSessions, setBookedSessions] = useState(() => bookingsService.getForStudent(currentUser?.name || ''));
+    // Booked sessions for Student (Live Reactive)
+  const [bookedSessions, setBookedSessions] = useState(() => bookingsService.getForStudent(currentUser?.name || '', currentUser?.id || currentUser?.student_id));
 
   useEffect(() => {
     const handleBookingsUpdate = () => {
-      setBookedSessions(bookingsService.getForStudent(currentUser?.name || ''));
+      setBookedSessions(bookingsService.getForStudent(currentUser?.name || '', currentUser?.id || currentUser?.student_id));
     };
     const handlePlanningUpdate = (e) => {
       setPlanningAuthority(e.detail || planningAuthorityStore.getForChild('liam'));
@@ -61,15 +63,17 @@ export default function StudentDashboard({ onGoToReading, onGoToQuiz, onGoToChat
     };
 
     window.addEventListener('somahome_bookings_updated', handleBookingsUpdate);
+    window.addEventListener('storage', handleBookingsUpdate);
     window.addEventListener('planning_authority_updated', handlePlanningUpdate);
     window.addEventListener('somahome_holiday_sprint_updated', handleSprintUpdate);
 
     return () => {
       window.removeEventListener('somahome_bookings_updated', handleBookingsUpdate);
+      window.removeEventListener('storage', handleBookingsUpdate);
       window.removeEventListener('planning_authority_updated', handlePlanningUpdate);
       window.removeEventListener('somahome_holiday_sprint_updated', handleSprintUpdate);
     };
-  }, []);
+  }, [currentUser?.name, currentUser?.id]);
 
   const upcomingSession = bookedSessions[0] || {
     tutorName: planningAuthority?.teacherName || 'Teacher Mercy Wanjiku',
@@ -290,6 +294,98 @@ export default function StudentDashboard({ onGoToReading, onGoToQuiz, onGoToChat
         </div>
       </div>
 
+            {/* CONFIRMED 1-ON-1 SPECIALIST TUTOR SESSIONS */}
+      {bookedSessions && bookedSessions.length > 0 && (
+        <div className="glass-panel" style={{
+          padding: '20px 24px',
+          marginBottom: '24px',
+          borderRadius: '16px',
+          background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(59, 130, 246, 0.08) 100%)',
+          border: '1.5px solid rgba(16, 185, 129, 0.4)',
+          boxShadow: '0 8px 24px rgba(16, 185, 129, 0.15)'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '1.4rem' }}>🎓</span>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#FFFFFF' }}>
+                  Confirmed 1-on-1 Specialist Classes ({bookedSessions.length})
+                </h3>
+                <div style={{ fontSize: '0.75rem', color: '#34D399', fontWeight: 600 }}>
+                  Scheduled for {currentUser?.name ? currentUser.name.split(' ')[0] : 'Learner'}
+                </div>
+              </div>
+            </div>
+            <span className="glass-pill" style={{ background: '#10B981', color: '#022c22', fontWeight: 800, fontSize: '0.72rem' }}>
+              LIVE SCHEDULE SYNC ✓
+            </span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+            {bookedSessions.map((session) => {
+              const isVirtual = session.sessionType === 'virtual' || !session.sessionType;
+              return (
+                <div
+                  key={session.id}
+                  style={{
+                    background: 'rgba(0, 0, 0, 0.35)',
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                    borderRadius: '12px',
+                    padding: '14px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    gap: '10px'
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <span className="glass-pill" style={{ fontSize: '0.68rem', color: isVirtual ? '#60A5FA' : '#34D399', border: '1px solid rgba(255,255,255,0.1)' }}>
+                        {isVirtual ? '💻 Virtual Classroom' : '🏡 Home Visit'}
+                      </span>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                        {session.date}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                      <img
+                        src={session.tutorAvatar || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=120'}
+                        alt={session.tutorName}
+                        style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #10B981' }}
+                      />
+                      <div>
+                        <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#FFF' }}>
+                          {session.focusSubject}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: '#34D399' }}>
+                          {session.tutorName} · {session.timeSlot}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {isVirtual ? (
+                    <button
+                      onClick={() => setSelectedLiveSession(session)}
+                      className="btn-primary"
+                      style={{ width: '100%', justifyContent: 'center', fontSize: '0.78rem', padding: '7px 12px', background: '#10B981', color: '#022c22', fontWeight: 800 }}
+                    >
+                      <Video size={13} />
+                      <span>Enter Live Classroom</span>
+                    </button>
+                  ) : (
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.04)', padding: '6px 8px', borderRadius: '6px' }}>
+                      📍 Location: <strong>{session.estateAddress || 'Kilimani, Nairobi'}</strong>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* HOLIDAY SPRINT BONUS QUESTS (Injected when parent activates a sprint) */}
       {activeHolidaySprint && (
         <div className="glass-panel" style={{
@@ -491,6 +587,19 @@ export default function StudentDashboard({ onGoToReading, onGoToQuiz, onGoToChat
         </div>
 
       </div>
+
+            {/* Selected Live Virtual Classroom Modal */}
+      {selectedLiveSession && (
+        <LiveClassroomModal
+          isOpen={!!selectedLiveSession}
+          onClose={() => setSelectedLiveSession(null)}
+          session={selectedLiveSession}
+          sessionTitle={selectedLiveSession.focusSubject || 'Live Masterclass'}
+          teacherName={selectedLiveSession.tutorName}
+          tutorAvatar={selectedLiveSession.tutorAvatar}
+          studentName={selectedLiveSession.studentName || (currentUser?.name ? currentUser.name.split(' ')[0] : 'Learner')}
+        />
+      )}
 
       {/* 1-on-1 Student-Teacher Video Call Modal */}
       {isTeacherCallOpen && (

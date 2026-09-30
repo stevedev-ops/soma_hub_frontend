@@ -18,11 +18,14 @@ export default function LiveSessions({ onGoToHome, onGoToReading, onGoToQuiz }) 
   const displayName = currentUser?.name ? currentUser.name.split(' ')[0] : 'Learner';
 
   // Load real sessions from reactive bookings store
+    const [formatFilter, setFormatFilter] = useState('ALL'); // 'ALL' | 'virtual' | 'in_person'
+
+  // Load real sessions from reactive bookings store
   const [bookings, setBookings] = useState(() => {
     if (isStudent) {
-      return bookingsService.getForStudent(studentName);
+      return bookingsService.getForStudent(studentName, currentUser?.id || currentUser?.student_id);
     } else if (isTeacher) {
-      return bookingsService.getForTeacher(currentUser?.name || '');
+      return bookingsService.getForTeacher(currentUser?.name || '', currentUser?.id);
     }
     return bookingsService.getAll();
   });
@@ -30,9 +33,9 @@ export default function LiveSessions({ onGoToHome, onGoToReading, onGoToQuiz }) 
   useEffect(() => {
     const handleUpdate = () => {
       if (isStudent) {
-        setBookings(bookingsService.getForStudent(currentUser?.name || ''));
+        setBookings(bookingsService.getForStudent(currentUser?.name || '', currentUser?.id || currentUser?.student_id));
       } else if (isTeacher) {
-        setBookings(bookingsService.getForTeacher(currentUser?.name || ''));
+        setBookings(bookingsService.getForTeacher(currentUser?.name || '', currentUser?.id));
       } else {
         setBookings(bookingsService.getAll());
       }
@@ -44,14 +47,18 @@ export default function LiveSessions({ onGoToHome, onGoToReading, onGoToQuiz }) 
       window.removeEventListener('somahome_bookings_updated', handleUpdate);
       window.removeEventListener('storage', handleUpdate);
     };
-  }, [currentUser?.name, isStudent, isTeacher]);
+  }, [currentUser?.name, currentUser?.id, isStudent, isTeacher]);
 
-  // Filter for virtual video classroom sessions
-  const virtualSessions = bookings.filter(b => b.sessionType === 'virtual' || !b.sessionType);
+  // Format filter (shows all sessions: virtual and in_person)
+  const formatFiltered = bookings.filter(b => {
+    if (formatFilter === 'virtual') return b.sessionType === 'virtual' || !b.sessionType;
+    if (formatFilter === 'in_person') return b.sessionType === 'in_person';
+    return true;
+  });
 
   const filteredSessions = subjectFilter === 'ALL'
-    ? virtualSessions
-    : virtualSessions.filter((s) => (s.focusSubject || s.tutorSubject || '').toLowerCase().includes(subjectFilter.toLowerCase()));
+    ? formatFiltered
+    : formatFiltered.filter((s) => (s.focusSubject || s.tutorSubject || '').toLowerCase().includes(subjectFilter.toLowerCase()));
 
   return (
     <div>
@@ -72,24 +79,47 @@ export default function LiveSessions({ onGoToHome, onGoToReading, onGoToQuiz }) 
         </div>
 
         {/* Dropdown Filter */}
-        {virtualSessions.length > 0 && (
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-subtle)', borderRadius: '10px', padding: '3px' }}>
+            {[
+              { id: 'ALL', label: `All (${bookings.length})` },
+              { id: 'virtual', label: '💻 Virtual' },
+              { id: 'in_person', label: '🏡 Home Visits' }
+            ].map((fmt) => (
+              <button
+                key={fmt.id}
+                onClick={() => setFormatFilter(fmt.id)}
+                style={{
+                  padding: '6px 10px',
+                  borderRadius: '8px',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: formatFilter === fmt.id ? '#00A651' : 'transparent',
+                  color: formatFilter === fmt.id ? '#FFF' : 'var(--text-muted)',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                {fmt.label}
+              </button>
+            ))}
+          </div>
+
           <div>
-            <label style={{ display: 'block', fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '4px' }}>
-              Filter Subject:
-            </label>
             <select
               className="custom-select"
               value={subjectFilter}
               onChange={(e) => setSubjectFilter(e.target.value)}
-              style={{ minWidth: '180px' }}
+              style={{ minWidth: '150px', fontSize: '0.78rem' }}
             >
-              <option value="ALL">All Subjects ({virtualSessions.length})</option>
+              <option value="ALL">All Subjects ({formatFiltered.length})</option>
               <option value="math">Mathematics</option>
               <option value="science">Science & Lab</option>
               <option value="languages">Languages & Phonics</option>
             </select>
           </div>
-        )}
+        </div>
       </div>
 
       {/* Sessions Grid or Live Connected Empty State */}
@@ -259,15 +289,31 @@ export default function LiveSessions({ onGoToHome, onGoToReading, onGoToQuiz }) 
                 </div>
               </div>
 
-              <div style={{ paddingTop: '16px', borderTop: '1px solid var(--border-subtle)' }}>
-                <button
-                  onClick={() => setSelectedLiveSession(session)}
-                  className="btn-primary"
-                  style={{ width: '100%', justifyContent: 'center', gap: '8px', background: '#10B981', color: '#022c22', fontWeight: 800 }}
-                >
-                  <Video size={16} />
-                  <span>Enter In-App Live Classroom Now</span>
-                </button>
+                            <div style={{ paddingTop: '14px', borderTop: '1px solid var(--border-subtle)' }}>
+                {session.sessionType === 'in_person' ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ background: 'rgba(0,166,81,0.08)', border: '1px solid rgba(0,166,81,0.25)', borderRadius: '8px', padding: '8px 10px', fontSize: '0.78rem', color: '#34D399' }}>
+                      🏡 <strong>Home Visit Location:</strong> {session.estateAddress || 'Kilimani, Nairobi'}
+                    </div>
+                    <button
+                      onClick={() => alert(`🏡 Confirmed Home Visit\n\nLearner: ${session.studentName || displayName}\nEducator: ${session.tutorName}\nDate & Time: ${session.date} • ${session.timeSlot}\nLocation: ${session.estateAddress || 'Home Address'}\nTopic: ${session.focusSubject}\nStatus: Confirmed & Paid via M-Pesa (${session.receipt || 'SKM-CONFIRMED'})`)}
+                      className="btn-secondary"
+                      style={{ width: '100%', justifyContent: 'center', gap: '6px', fontSize: '0.82rem', borderColor: 'rgba(0,166,81,0.4)', color: '#34D399' }}
+                    >
+                      <MapPin size={14} />
+                      <span>View Home Visit Details</span>
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setSelectedLiveSession(session)}
+                    className="btn-primary"
+                    style={{ width: '100%', justifyContent: 'center', gap: '8px', background: '#10B981', color: '#022c22', fontWeight: 800 }}
+                  >
+                    <Video size={16} />
+                    <span>Enter In-App Live Classroom Now</span>
+                  </button>
+                )}
               </div>
             </div>
           ))}

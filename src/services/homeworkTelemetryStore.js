@@ -157,27 +157,75 @@ export const bookingsService = {
     }
   },
 
-  getForStudent: (studentName = '') => {
+  cancelBooking: (bookingId) => {
     try {
-      const all = bookingsService.getAll();
-      if (!studentName) return all.filter(b => b.status !== 'Cancelled');
-      const studentLower = studentName.toLowerCase().split(' ')[0];
-      return all.filter(b => 
-        b.studentName?.toLowerCase().includes(studentLower) && b.status !== 'Cancelled'
-      );
+      const current = bookingsService.getAll();
+      const next = current.map(b => b.id === bookingId ? { ...b, status: 'Cancelled' } : b);
+      localStorage.setItem(BOOKINGS_STORAGE_KEY, JSON.stringify(next));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('somahome_bookings_updated', { detail: next }));
+      }
+      return next;
     } catch {
       return [];
     }
   },
 
-  getForTeacher: (teacherName = '') => {
+  getForStudent: (studentName = '', studentId = null) => {
     try {
       const all = bookingsService.getAll();
-      if (!teacherName) return all.filter(b => b.status !== 'Cancelled');
-      const teacherLower = teacherName.toLowerCase();
-      return all.filter(b => 
-        (b.tutorName?.toLowerCase().includes(teacherLower) || !b.tutorName) && b.status !== 'Cancelled'
-      );
+      if (!studentName && !studentId) return all.filter(b => b.status !== 'Cancelled');
+      
+      const cleanName = (studentName || '').trim().toLowerCase();
+      const tokens = cleanName.split(/\s+/).filter(Boolean);
+      const firstToken = tokens[0] || '';
+
+      return all.filter(b => {
+        if (b.status === 'Cancelled') return false;
+        if (studentId && b.studentId && String(b.studentId) === String(studentId)) return true;
+        
+        const bStudent = (b.studentName || '').trim().toLowerCase();
+        if (!bStudent || bStudent === 'learner') return true;
+        
+        // Exact or token match (e.g. Mike matches 'Mike Kariuki', 'Mike Mutwiri')
+        if (firstToken && bStudent.includes(firstToken)) return true;
+        if (tokens.some(t => bStudent.includes(t))) return true;
+        if (bStudent.includes(cleanName) || cleanName.includes(bStudent)) return true;
+        
+        return false;
+      });
+    } catch {
+      return [];
+    }
+  },
+
+  getForTeacher: (teacherName = '', tutorId = null) => {
+    try {
+      const all = bookingsService.getAll();
+      if (!teacherName && !tutorId) return all.filter(b => b.status !== 'Cancelled');
+      
+      const cleanTeacher = (teacherName || '').trim().toLowerCase();
+      const strippedTeacher = cleanTeacher
+        .replace(/^(teacher|tr\.|dr\.|mr\.|mrs\.|ms\.)\s+/i, '')
+        .replace(/\(tutor\)/gi, '')
+        .trim();
+      const teacherTokens = strippedTeacher.split(/\s+/).filter(Boolean);
+      const firstToken = teacherTokens[0] || '';
+
+      return all.filter(b => {
+        if (b.status === 'Cancelled') return false;
+        if (tutorId && b.tutorId && String(b.tutorId) === String(tutorId)) return true;
+        
+        const bTutor = (b.tutorName || '').trim().toLowerCase();
+        if (!bTutor) return true;
+        
+        if (cleanTeacher && bTutor.includes(cleanTeacher)) return true;
+        if (strippedTeacher && bTutor.includes(strippedTeacher)) return true;
+        if (firstToken && bTutor.includes(firstToken)) return true;
+        if (teacherTokens.some(t => bTutor.includes(t))) return true;
+        
+        return false;
+      });
     } catch {
       return [];
     }
