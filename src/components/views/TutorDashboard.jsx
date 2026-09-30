@@ -224,7 +224,42 @@ export default function TutorDashboard({ onNavigateToCreator }) {
       </div>
 
       {/* Main Navigation Tabs */}
-      <div className="glass-panel" style={{ padding: '10px 14px', marginBottom: '24px', display: 'flex', gap: '8px', overflowX: 'auto' }}>
+      {/* Mobile Dropdown View */}
+      <div className="mobile-nav-select" style={{ marginBottom: '18px' }}>
+        <label style={{ display: 'block', fontSize: '0.74rem', color: '#34D399', fontWeight: 800, textTransform: 'uppercase', marginBottom: '6px' }}>
+          Select Tutor Section:
+        </label>
+        <select
+          value={activeTab}
+          onChange={(e) => setActiveTab(e.target.value)}
+          className="custom-select"
+          style={{
+            width: '100%',
+            padding: '12px 16px',
+            fontSize: '0.88rem',
+            fontWeight: 700,
+            background: '#0E1726',
+            border: '1.5px solid #00A651',
+            borderRadius: '14px',
+            color: '#F8FAFC',
+            boxShadow: '0 4px 14px rgba(0, 166, 81, 0.2)'
+          }}
+        >
+          {[
+            { id: 'schedule_manager', label: `📅 Weekly Schedule & Availability (${scheduleSlots.length} Slots)` },
+            { id: 'pods', label: `🏘️ My Estate Pods (${podGroups.length})` },
+            { id: 'marking', label: `📝 CBA Marking & Rubrics (${homeworkList.filter(h => h.status === 'submitted').length} Pending)` },
+            { id: 'schedule_live', label: '🎥 Host Live Class' },
+            { id: 'students', label: `👤 All Students (${assignedStudents.length})` },
+            { id: 'earnings', label: `💰 Wallet & Payout (KES ${balanceKes.toLocaleString()})` }
+          ].map(tab => (
+            <option key={tab.id} value={tab.id}>{tab.label}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Desktop Pills View */}
+      <div className="desktop-nav-pills glass-panel" style={{ padding: '10px 14px', marginBottom: '24px', gap: '8px', flexWrap: 'wrap' }}>
         {[
           { id: 'schedule_manager', label: `📅 Weekly Schedule & Availability (${scheduleSlots.length} Slots)` },
           { id: 'pods', label: `🏘️ My Estate Pods (${podGroups.length})` },
@@ -292,7 +327,34 @@ export default function TutorDashboard({ onNavigateToCreator }) {
             </div>
 
             {/* Day Filter Tabs */}
-            <div style={{ display: 'flex', gap: '8px', marginTop: '18px', overflowX: 'auto', paddingBottom: '4px' }}>
+            {/* Mobile Day Selector Dropdown */}
+            <div className="mobile-nav-select" style={{ marginTop: '14px' }}>
+              <label style={{ display: 'block', fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '4px' }}>
+                Filter By Day:
+              </label>
+              <select
+                value={selectedDayFilter}
+                onChange={(e) => setSelectedDayFilter(e.target.value)}
+                className="custom-select"
+                style={{
+                  width: '100%',
+                  padding: '10px 14px',
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  background: '#0B111E',
+                  border: '1px solid rgba(0, 166, 81, 0.4)',
+                  borderRadius: '10px',
+                  color: '#34D399'
+                }}
+              >
+                {daysOfWeek.map(day => (
+                  <option key={day} value={day}>{day}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Desktop Day Pills */}
+            <div className="desktop-nav-pills" style={{ gap: '8px', marginTop: '18px', flexWrap: 'wrap' }}>
               {daysOfWeek.map((day) => (
                 <button
                   key={day}
