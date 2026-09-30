@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { 
   Flame, Award, Star, Gamepad2, CheckCircle, ArrowRight, BookOpen, 
   Sparkles, Trophy, ExternalLink, Video, Compass, CheckCircle2, 
@@ -12,6 +13,7 @@ import { homeworkService, bookingsService, telemetryService } from '../../servic
 import { planningAuthorityStore } from '../../services/planningAuthorityStore';
 
 export default function StudentDashboard({ onGoToReading, onGoToQuiz, onGoToChat }) {
+  const { currentUser } = useAuth();
   const [streak, setStreak] = useState(15);
   const [xp, setXp] = useState(1450);
   const [isShowcaseOpen, setIsShowcaseOpen] = useState(false);
