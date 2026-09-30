@@ -162,6 +162,31 @@ export default function TutorDashboard({ onNavigateToCreator }) {
       liveLink: liveLessonForm.meetingLink,
       materials: liveLessonForm.materialsNeeded
     });
+
+    // Create reactive live session booking for student & parent
+    const targetStudentName = liveLessonForm.targetPodId === 'student_mike' ? 'Mike Kariuki' : 'Learner';
+    const targetStudentId = liveLessonForm.targetPodId === 'student_mike' ? 'mike' : null;
+    const newBooking = {
+      id: 'BKG-TR-' + Math.floor(1000 + Math.random() * 9000),
+      tutorId: currentUser?.id || 'mercy',
+      tutorName: currentUser?.name || 'Teacher Mercy Wanjiku',
+      tutorAvatar: currentUser?.avatar || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200',
+      studentName: targetStudentName,
+      studentId: targetStudentId,
+      date: liveLessonForm.date || 'Today',
+      timeSlot: liveLessonForm.time || '09:00 AM - 10:30 AM',
+      sessionType: 'virtual',
+      estateAddress: currentUser?.estate || 'Kilimani, Nairobi',
+      focusSubject: `${liveLessonForm.subject}: ${liveLessonForm.title}`,
+      parentNotes: `Teacher Note: ${liveLessonForm.materialsNeeded || 'Live virtual classroom with interactive whiteboard'}`,
+      amount: 0,
+      receipt: 'TR-LIVE-' + Math.floor(100000 + Math.random() * 900000),
+      status: 'Confirmed',
+      isLiveNow: true,
+      createdAt: new Date().toISOString()
+    };
+    bookingsService.addBooking(newBooking);
+
     setScheduleSuccess(true);
     setTimeout(() => setScheduleSuccess(false), 3000);
   };
@@ -733,9 +758,12 @@ export default function TutorDashboard({ onNavigateToCreator }) {
                 onChange={(e) => setLiveLessonForm({ ...liveLessonForm, targetPodId: e.target.value })}
                 style={{ width: '100%', fontSize: '0.85rem', padding: '8px 12px' }}
               >
-                {podGroups.map(p => (
-                  <option key={p.id} value={p.id}>{p.name} ({p.curriculum})</option>
+                <option value="student_mike">👦 Mike Kariuki (1-on-1 Specialist Class)</option>
+                <option value="pod_alpha">🏫 Syokimau CBC Pod Alpha (Pod Group)</option>
+                {podGroups.filter(p => p.id !== 'pod_alpha').map(p => (
+                  <option key={p.id} value={p.id}>👥 {p.name} ({p.curriculum})</option>
                 ))}
+                <option value="all_learners">🌐 All Enrolled Learners (Broadcast)</option>
               </select>
             </div>
 
