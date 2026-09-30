@@ -1,5 +1,5 @@
 // SomaHome Service Worker - Offline Resilience & PWA Installability
-const CACHE_NAME = 'somahome-cache-v2';
+const CACHE_NAME = 'somahome-cache-v3';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -41,10 +41,30 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   if (event.request.url.includes('/api/')) return;
 
+  const url = new URL(event.request.url);
+
+  // Network-first for JavaScript and CSS bundles to always get latest deployment version
+  if (url.pathname.startsWith('/assets/')) {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          // If server returned 404 or text/html (SPA fallback for deleted old chunk), don't cache
+          const contentType = networkResponse.headers.get('content-type') || '';
+          if (networkResponse.status === 200 && !contentType.includes('text/html')) {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseToCache));
+          }
+          return networkResponse;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Cache-first for static icons & manifest
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
-        // Fetch fresh copy in background
         fetch(event.request)
           .then((networkResponse) => {
             if (networkResponse && networkResponse.status === 200) {
@@ -61,15 +81,12 @@ self.addEventListener('fetch', (event) => {
             return networkResponse;
           }
           const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseToCache));
           return networkResponse;
         })
         .catch(() => {
-          // Fallback to cached index.html for navigation requests
           if (event.request.mode === 'navigate') {
-            return caches.match('/');
+            return caches.match('/index.html') || caches.match('/');
           }
         });
     })
