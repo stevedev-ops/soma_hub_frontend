@@ -191,6 +191,11 @@ export default function TutorDashboard({ onNavigateToCreator }) {
     setTimeout(() => setScheduleSuccess(false), 3000);
   };
 
+  const handleDeleteBooking = (bookingId) => {
+    bookingsService.deleteBooking(bookingId);
+    setBookedSessions(bookingsService.getForTeacher(currentUser?.name || '', currentUser?.id));
+  };
+
   const handleWithdrawMpesa = (e) => {
     e.preventDefault();
     setWithdrawLoading(true);
@@ -497,6 +502,14 @@ export default function TutorDashboard({ onNavigateToCreator }) {
                             <span>View Address & Notes</span>
                           </button>
                         )}
+                        <button
+                          onClick={() => handleDeleteBooking(session.id)}
+                          className="btn-secondary"
+                          style={{ padding: '7px 10px', color: '#EF4444', borderColor: 'rgba(239,68,68,0.3)' }}
+                          title="Remove this booking"
+                        >
+                          <Trash2 size={13} />
+                        </button>
                       </div>
                     </div>
                   );

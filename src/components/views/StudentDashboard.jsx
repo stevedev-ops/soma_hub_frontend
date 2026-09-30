@@ -31,7 +31,7 @@ export default function StudentDashboard({ onGoToReading, onGoToQuiz, onGoToChat
   const [isTeacherChatOpen, setIsTeacherChatOpen] = useState(false);
 
   // Planning authority & Pod state
-  const [planningAuthority, setPlanningAuthority] = useState(() => planningAuthorityStore.getForChild('liam'));
+  const [planningAuthority, setPlanningAuthority] = useState(() => planningAuthorityStore.getForChild(currentUser?.id || 'mike'));
   const [pods, setPods] = useState(() => planningAuthorityStore.getTeacherPods());
 
   // Active Holiday Sprint Quests from Parent
@@ -56,7 +56,7 @@ export default function StudentDashboard({ onGoToReading, onGoToQuiz, onGoToChat
       setBookedSessions(bookingsService.getForStudent(currentUser?.name || '', currentUser?.id || currentUser?.student_id));
     };
     const handlePlanningUpdate = (e) => {
-      setPlanningAuthority(e.detail || planningAuthorityStore.getForChild('liam'));
+      setPlanningAuthority(e.detail || planningAuthorityStore.getForChild(currentUser?.id || 'mike'));
     };
     const handleSprintUpdate = (e) => {
       setActiveHolidaySprint(e.detail || JSON.parse(localStorage.getItem('somahome_active_holiday_sprint')));
@@ -173,7 +173,7 @@ export default function StudentDashboard({ onGoToReading, onGoToQuiz, onGoToChat
     { title: 'Code Architect', icon: '💻', desc: 'Crafted geometric angles in Turtle', unlocked: false }
   ];
 
-  const liamPod = pods?.find(p => p.memberStudentIds?.includes('liam')) || pods?.[0];
+  const liamPod = pods?.find(p => p.memberStudentIds?.includes(currentUser?.id || 'mike')) || null;
 
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto' }}>

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import SafetyGuaranteeModal from '../marketplace/SafetyGuaranteeModal';
 import { generateSessionIcs } from '../../services/calendarExport';
+import { bookingsService } from '../../services/homeworkTelemetryStore';
 import { 
-  X, Calendar, Clock, Video, MapPin, ShieldCheck, User, 
+  X, Trash2, Calendar, Clock, Video, MapPin, ShieldCheck, User, 
   ExternalLink, Phone, ArrowRight, CheckCircle2, AlertCircle, Plus 
 } from 'lucide-react';
 
@@ -291,6 +292,17 @@ export default function UpcomingSessionsModal({
                           style={{ fontSize: '0.78rem', padding: '6px 12px' }}
                         >
                           Details
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            bookingsService.deleteBooking(session.id);
+                          }}
+                          className="btn-secondary"
+                          style={{ fontSize: '0.78rem', padding: '6px 10px', color: '#EF4444', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                          title="Cancel Booking"
+                        >
+                          <Trash2 size={12} />
                         </button>
                       </div>
                     </div>

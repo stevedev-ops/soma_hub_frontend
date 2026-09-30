@@ -157,6 +157,32 @@ export const bookingsService = {
     }
   },
 
+  deleteBooking: (bookingId) => {
+    try {
+      const current = bookingsService.getAll();
+      const next = current.filter(b => b.id !== bookingId);
+      localStorage.setItem(BOOKINGS_STORAGE_KEY, JSON.stringify(next));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('somahome_bookings_updated', { detail: next }));
+      }
+      return next;
+    } catch {
+      return [];
+    }
+  },
+
+  clearAll: () => {
+    try {
+      localStorage.setItem(BOOKINGS_STORAGE_KEY, JSON.stringify([]));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('somahome_bookings_updated', { detail: [] }));
+      }
+      return [];
+    } catch {
+      return [];
+    }
+  },
+
   cancelBooking: (bookingId) => {
     try {
       const current = bookingsService.getAll();
@@ -174,26 +200,27 @@ export const bookingsService = {
   getForStudent: (studentName = '', studentId = null) => {
     try {
       const all = bookingsService.getAll();
-      if (!studentName && !studentId) return all.filter(b => b.status !== 'Cancelled');
+      const active = all.filter(b => b.status !== 'Cancelled');
+      if (!studentName && !studentId) return active;
       
       const cleanName = (studentName || '').trim().toLowerCase();
       const tokens = cleanName.split(/\s+/).filter(Boolean);
       const firstToken = tokens[0] || '';
 
-      return all.filter(b => {
-        if (b.status === 'Cancelled') return false;
+      const matched = active.filter(b => {
         if (studentId && b.studentId && String(b.studentId) === String(studentId)) return true;
         
         const bStudent = (b.studentName || '').trim().toLowerCase();
         if (!bStudent || bStudent === 'learner') return true;
         
-        // Exact or token match (e.g. Mike matches 'Mike Kariuki', 'Mike Mutwiri')
         if (firstToken && bStudent.includes(firstToken)) return true;
         if (tokens.some(t => bStudent.includes(t))) return true;
         if (bStudent.includes(cleanName) || cleanName.includes(bStudent)) return true;
         
         return false;
       });
+
+      return matched.length > 0 ? matched : active;
     } catch {
       return [];
     }
@@ -202,7 +229,8 @@ export const bookingsService = {
   getForTeacher: (teacherName = '', tutorId = null) => {
     try {
       const all = bookingsService.getAll();
-      if (!teacherName && !tutorId) return all.filter(b => b.status !== 'Cancelled');
+      const active = all.filter(b => b.status !== 'Cancelled');
+      if (!teacherName && !tutorId) return active;
       
       const cleanTeacher = (teacherName || '').trim().toLowerCase();
       const strippedTeacher = cleanTeacher
@@ -212,8 +240,7 @@ export const bookingsService = {
       const teacherTokens = strippedTeacher.split(/\s+/).filter(Boolean);
       const firstToken = teacherTokens[0] || '';
 
-      return all.filter(b => {
-        if (b.status === 'Cancelled') return false;
+      const matched = active.filter(b => {
         if (tutorId && b.tutorId && String(b.tutorId) === String(tutorId)) return true;
         
         const bTutor = (b.tutorName || '').trim().toLowerCase();
@@ -226,6 +253,9 @@ export const bookingsService = {
         
         return false;
       });
+
+      // Crucial: If specific match found return it, otherwise return all active bookings so any educator view can see parent bookings
+      return matched.length > 0 ? matched : active;
     } catch {
       return [];
     }
