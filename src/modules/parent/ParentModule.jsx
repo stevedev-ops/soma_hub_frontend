@@ -40,7 +40,7 @@ export default function ParentModule({
   onOpenPrintable,
   onBuyPackage
 }) {
-  const currentChild = childrenList?.find(c => c.id === activeStudent) || childrenList?.[0] || { name: 'Liam Kiprop', grade: 'Grade 4 CBC' };
+  const currentChild = childrenList?.find(c => c.id === activeStudent) || childrenList?.[0] || { name: childrenList?.[0]?.name || 'Learner', grade: childrenList?.[0]?.grade || 'CBC' };
 
   const handleSelectCurriculumForStudent = (childId, pkg) => {
     if (setChildrenList) {

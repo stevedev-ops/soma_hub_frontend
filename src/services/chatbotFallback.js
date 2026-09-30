@@ -25,31 +25,52 @@ export const generateLocalAIResponse = (userMessage, currentUser, activeStudent,
   const userRole = isAuth ? (isStudent ? 'Student / Learner' : isTeacher ? 'Tutor / Facilitator' : isCreator ? 'Curriculum Creator' : 'Parent / Guardian') : 'Guest Visitor';
   const estate = currentUser?.estate || 'Kilimani, Nairobi';
 
-  // Build complete multi-child household list
-  let familyRoster = [
-    { id: 'liam', name: 'Liam Kariuki', grade: 'Grade 4 (CBC)', curriculum: 'CBC', percent: 85, completed: 34, total: 40, project: 'Science Lab & Water Filtration', rubric: 'Level 4: EE (Exceeding Expectations)' },
-    { id: 'maya', name: 'Maya Kariuki', grade: 'Grade 2 (Cambridge)', curriculum: 'Cambridge', percent: 90, completed: 36, total: 40, project: 'Phonics & Creative Expression', rubric: 'Level 4: EE (Exceeding Expectations)' },
-    { id: 'mike', name: 'Mike Kariuki', grade: 'PP2 Playgroup (CBC)', curriculum: 'CBC', percent: 75, completed: 30, total: 40, project: 'Motor Skills & Color Sorting', rubric: 'Level 3: ME (Meeting Expectations)' }
-  ];
+    // Build household list strictly from enrolled children
+  let familyRoster = [];
 
   if (Array.isArray(childrenList) && childrenList.length > 0) {
     familyRoster = childrenList.map(c => {
-      let cName = c.name || 'Learner Kariuki';
-      if (['child', 'learner', 'student'].includes(cName.toLowerCase())) {
-        cName = 'Liam Kariuki';
-      }
+      const cName = c.name || c.first_name || 'Learner';
       return {
         id: c.id || cName.toLowerCase().replace(/\s+/g, '_'),
         name: cName,
-        grade: c.grade || 'Grade 4 (CBC)',
+        grade: c.grade || 'CBC Grade Level',
         curriculum: c.curriculum || 'CBC',
-        percent: c.percent || 85,
-        completed: c.completed || 34,
-        total: c.total || 40,
-        project: c.project || 'Science Lab & Water Filtration',
-        rubric: c.rubric || 'Level 4: EE (Exceeding Expectations)'
+        percent: c.percent || 80,
+        completed: c.completed || 25,
+        total: c.total || 35,
+        project: c.project || 'Active Learning & Practical Labs',
+        rubric: c.rubric || 'Level 3: ME (Meeting Expectations)'
       };
     });
+  } else if (currentUser?.children && Array.isArray(currentUser.children) && currentUser.children.length > 0) {
+    familyRoster = currentUser.children.map(c => {
+      const cName = c.name || c.first_name || 'Learner';
+      return {
+        id: c.id || cName.toLowerCase().replace(/\s+/g, '_'),
+        name: cName,
+        grade: c.grade || 'CBC Grade Level',
+        curriculum: c.curriculum || 'CBC',
+        percent: 80,
+        completed: 25,
+        total: 35,
+        project: 'Active Learning & Practical Labs',
+        rubric: 'Level 3: ME (Meeting Expectations)'
+      };
+    });
+  } else if (isStudent) {
+    const studentDisplayName = currentUser?.name || currentUser?.username || 'Learner';
+    familyRoster = [{
+      id: currentUser?.id || 'student_self',
+      name: studentDisplayName,
+      grade: currentUser?.grade || 'Grade 4 (CBC)',
+      curriculum: currentUser?.curriculum || 'CBC',
+      percent: 85,
+      completed: 30,
+      total: 35,
+      project: 'Core CBC Curriculum Missions',
+      rubric: 'Level 4: EE (Exceeding Expectations)'
+    }];
   }
 
   // Resolve student profile if logged in as student
