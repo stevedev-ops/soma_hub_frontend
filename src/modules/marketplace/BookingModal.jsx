@@ -4,6 +4,15 @@ import { useAuth } from '../../context/AuthContext';
 import { bookingsService, telemetryService } from '../../services/homeworkTelemetryStore';
 import { ALL_COUNTIES, getEstatesForCounty } from '../../services/kenyaCountiesAndEstates';
 
+const INSTRUCTION_PRESETS = [
+  'Please bring tangible fraction circles and CBC practical counters.',
+  'Focus on exam preparation, past paper questions, and revision.',
+  'Help build foundational reading confidence and phonics.',
+  'Prepare diagnostic baseline assessment for CBC Level 4.',
+  'Focus on STEM experiment observation and lab worksheets.',
+  'Custom note (type below)...'
+];
+
 export default function BookingModal({ tutor, isOpen, onClose, onBookingSuccess }) {
   const { currentUser } = useAuth();
   const [step, setStep] = useState('details'); // details -> mpesa -> confirmed
@@ -294,14 +303,18 @@ export default function BookingModal({ tutor, isOpen, onClose, onBookingSuccess 
             {/* Date & Time Selection */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '6px' }}>
-                  📅 Select Date:
-                </label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700 }}>
+                    📅 Select Date:
+                  </label>
+                  <span style={{ fontSize: '0.7rem', color: '#10B981' }}>Tap to pick</span>
+                </div>
                 <input
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="custom-select"
+                  onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                  className="custom-date-input"
                   style={{ width: '100%' }}
                   required
                 />
@@ -336,7 +349,7 @@ export default function BookingModal({ tutor, isOpen, onClose, onBookingSuccess 
                   type="text"
                   value={studentName}
                   onChange={(e) => setStudentName(e.target.value)}
-                  className="custom-select"
+                  className="custom-input"
                   style={{ width: '100%' }}
                   required
                 />
@@ -383,7 +396,7 @@ export default function BookingModal({ tutor, isOpen, onClose, onBookingSuccess 
                       setBookingCourt(e.target.value);
                       setEstateAddress(e.target.value ? `${e.target.value}, ${bookingEstate}, ${bookingCounty}` : `${bookingEstate}, ${bookingCounty}`);
                     }}
-                    className="custom-select"
+                    className="custom-input"
                     style={{ width: '100%', fontSize: '0.8rem' }}
                     placeholder="Specific Court / House / Gate No. (e.g. Court 4B, Wood Ave)"
                   />
@@ -410,18 +423,35 @@ export default function BookingModal({ tutor, isOpen, onClose, onBookingSuccess 
               </select>
             </div>
 
-            {/* Parent Notes */}
+            {/* Special Instructions for Tutor */}
             <div>
               <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '6px' }}>
                 Special Instructions for Tutor:
               </label>
+              <select
+                value={INSTRUCTION_PRESETS.includes(parentNotes) ? parentNotes : (parentNotes ? 'custom' : '')}
+                onChange={(e) => {
+                  if (e.target.value !== 'custom') {
+                    setParentNotes(e.target.value);
+                  }
+                }}
+                className="custom-select"
+                style={{ width: '100%', marginBottom: '8px', fontSize: '0.82rem' }}
+              >
+                <option value="">-- Choose Quick Instruction Preset --</option>
+                {INSTRUCTION_PRESETS.map((p, idx) => (
+                  <option key={idx} value={p === 'Custom note (type below)...' ? 'custom' : p}>
+                    {p}
+                  </option>
+                ))}
+              </select>
               <textarea
                 value={parentNotes}
                 onChange={(e) => setParentNotes(e.target.value)}
                 rows={2}
-                className="custom-select"
+                className="custom-textarea"
                 style={{ width: '100%', resize: 'none', height: '55px' }}
-                placeholder="Note any specific areas child struggled with or needs extra attention..."
+                placeholder="Type custom instructions or specific focus topics here..."
               />
             </div>
 
@@ -444,7 +474,7 @@ export default function BookingModal({ tutor, isOpen, onClose, onBookingSuccess 
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="custom-select"
+                    className="custom-input"
                     style={{ flex: 1 }}
                     placeholder="e.g. 0712345678"
                     required
