@@ -29,7 +29,21 @@ import { referralAttributionStore } from './services/referralAttributionStore';
 function MainApp() {
   const { currentUser, isLoginModalOpen, setIsLoginModalOpen, switchAccount, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('family_dashboard');
-  const [activeStudent, setActiveStudent] = useState('liam');
+  const [activeStudent, setActiveStudent] = useState(() => {
+    try {
+      const savedUser = localStorage.getItem('somahome_user');
+      if (savedUser) {
+        const u = JSON.parse(savedUser);
+        if (u?.children?.[0]?.id) return u.children[0].id;
+      }
+      const savedChildren = localStorage.getItem('somahome_parent_children_v3');
+      if (savedChildren) {
+        const list = JSON.parse(savedChildren);
+        if (list?.[0]?.id) return list[0].id;
+      }
+    } catch (e) {}
+    return '';
+  });
 
   // Enrolled children managed in persistent family state
   const [childrenList, setChildrenList] = useState(() => {

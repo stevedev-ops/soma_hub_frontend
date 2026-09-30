@@ -13,11 +13,7 @@ const INSTRUCTION_PRESETS = [
   'Custom note (type below)...'
 ];
 
-const DEFAULT_CHILDREN = [
-  { id: 'liam', name: 'Liam Kariuki', grade: 'Grade 4 (CBC)', curriculum: 'CBC' },
-  { id: 'maya', name: 'Maya Kariuki', grade: 'Grade 2 (Cambridge)', curriculum: 'Cambridge' },
-  { id: 'mike', name: 'Mike Kariuki', grade: 'PP2 Playgroup (CBC)', curriculum: 'CBC' }
-];
+
 
 export default function BookingModal({ tutor, isOpen, onClose, onBookingSuccess }) {
   const { currentUser } = useAuth();
@@ -51,7 +47,15 @@ export default function BookingModal({ tutor, isOpen, onClose, onBookingSuccess 
   const [studentName, setStudentName] = useState(() => {
     return enrolledChildren[0]?.name || 'Mike Kariuki';
   });
-  const [isCustomStudent, setIsCustomStudent] = useState(false);
+    const [isCustomStudent, setIsCustomStudent] = useState(false);
+
+  useEffect(() => {
+    if (currentUser?.children && Array.isArray(currentUser.children) && currentUser.children.length > 0) {
+      setEnrolledChildren(currentUser.children);
+      setSelectedChildId(currentUser.children[0].id);
+      setStudentName(currentUser.children[0].name);
+    }
+  }, [currentUser]);
   const [bookingCounty, setBookingCounty] = useState('Nairobi');
   const [bookingEstate, setBookingEstate] = useState('Kilimani');
   const [bookingCourt, setBookingCourt] = useState('');
