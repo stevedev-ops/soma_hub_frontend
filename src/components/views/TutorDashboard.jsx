@@ -29,8 +29,8 @@ export default function TutorDashboard({ onNavigateToCreator }) {
   }, [currentUser?.name, currentUser?.id]); // 'schedule_manager' | 'pods' | 'marking' | 'schedule_live' | 'students' | 'earnings'
   
   // Teacher Pods & Students State
-  const [assignedStudents, setAssignedStudents] = useState(() => planningAuthorityStore.getTeacherStudents('mercy'));
-  const [podGroups, setPodGroups] = useState(() => planningAuthorityStore.getTeacherPods('mercy'));
+  const [assignedStudents, setAssignedStudents] = useState(() => planningAuthorityStore.getTeacherStudents(currentUser?.id || ''));
+  const [podGroups, setPodGroups] = useState(() => planningAuthorityStore.getTeacherPods(currentUser?.id || ''));
   const [selectedPodId, setSelectedPodId] = useState('pod_alpha');
 
   // New Pod Creation Modal State
@@ -47,7 +47,7 @@ export default function TutorDashboard({ onNavigateToCreator }) {
   });
 
   // Teacher Weekly Schedule Slots State
-  const [scheduleSlots, setScheduleSlots] = useState(() => planningAuthorityStore.getTeacherWeeklySlots('mercy'));
+  const [scheduleSlots, setScheduleSlots] = useState(() => planningAuthorityStore.getTeacherWeeklySlots(currentUser?.id || ''));
   const [selectedDayFilter, setSelectedDayFilter] = useState('All');
   const [isAddSlotModalOpen, setIsAddSlotModalOpen] = useState(false);
   const [isPublishedToMarketplace, setIsPublishedToMarketplace] = useState(true);
@@ -75,7 +75,7 @@ export default function TutorDashboard({ onNavigateToCreator }) {
   });
   const [scoreGrade, setScoreGrade] = useState('95%');
   const [rubricLevel, setRubricLevel] = useState('EE');
-  const [feedback, setFeedback] = useState('Superb problem solving Liam! Your explanation of compound rectangular perimeters was mathematically rigorous.');
+  const [feedback, setFeedback] = useState('Superb problem solving Mike! Your explanation of compound rectangular perimeters was mathematically rigorous.');
   const [markSuccess, setMarkSuccess] = useState(false);
 
   // M-Pesa B2C Withdrawal State
@@ -103,8 +103,8 @@ export default function TutorDashboard({ onNavigateToCreator }) {
 
   useEffect(() => {
     const handleScheduleUpdate = () => {
-      setScheduleSlots(planningAuthorityStore.getTeacherWeeklySlots('mercy'));
-      setPodGroups(planningAuthorityStore.getTeacherPods('mercy'));
+      setScheduleSlots(planningAuthorityStore.getTeacherWeeklySlots(currentUser?.id || ''));
+      setPodGroups(planningAuthorityStore.getTeacherPods(currentUser?.id || ''));
     };
     window.addEventListener('teacher_schedule_updated', handleScheduleUpdate);
     window.addEventListener('teacher_pods_updated', handleScheduleUpdate);
@@ -119,9 +119,9 @@ export default function TutorDashboard({ onNavigateToCreator }) {
     if (!newPodForm.name) return;
     planningAuthorityStore.createTeacherPod({
       ...newPodForm,
-      hostTeacher: 'Teacher Mercy Wanjiku (TSC Reg No. 582914)'
+      hostTeacher: `${currentUser?.name || 'Teacher'} (TSC Reg No. 582914)`
     });
-    setPodGroups(planningAuthorityStore.getTeacherPods('mercy'));
+    setPodGroups(planningAuthorityStore.getTeacherPods(currentUser?.id || ''));
     setIsNewPodModalOpen(false);
   };
 
@@ -169,7 +169,7 @@ export default function TutorDashboard({ onNavigateToCreator }) {
     const newBooking = {
       id: 'BKG-TR-' + Math.floor(1000 + Math.random() * 9000),
       tutorId: currentUser?.id || 'mercy',
-      tutorName: currentUser?.name || 'Teacher Mercy Wanjiku',
+      tutorName: currentUser?.name || 'Teacher',
       tutorAvatar: currentUser?.avatar || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200',
       studentName: targetStudentName,
       studentId: targetStudentId,
@@ -224,15 +224,13 @@ export default function TutorDashboard({ onNavigateToCreator }) {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
           <img
-            src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200"
-            alt="Teacher Mercy"
+            src={currentUser?.avatar || "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200"}
+            alt={currentUser?.name || "Educator"}
             style={{ width: '70px', height: '70px', borderRadius: '20px', objectFit: 'cover', border: '2px solid #00A651' }}
           />
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <h1 style={{ fontSize: '1.45rem', fontWeight: 900, margin: 0, color: '#FFFFFF' }}>
-                Teacher Mercy Wanjiku
-              </h1>
+              <h1 style={{ fontSize: '1.45rem', fontWeight: 900, margin: 0, color: '#FFFFFF' }}>{currentUser?.name || 'Educator Facilitator'}</h1>
               <span style={{ background: 'rgba(0,166,81,0.2)', color: '#34D399', fontSize: '0.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: '12px' }}>
                 TSC Accredited • Lead CBC Mentor
               </span>
