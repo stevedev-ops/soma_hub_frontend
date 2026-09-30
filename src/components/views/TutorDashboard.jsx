@@ -30,6 +30,24 @@ export default function TutorDashboard({ onNavigateToCreator }) {
   
   // Teacher Pods & Students State
   const [assignedStudents, setAssignedStudents] = useState(() => planningAuthorityStore.getTeacherStudents(currentUser?.id || ''));
+
+  const allStudents = React.useMemo(() => {
+    const list = [...assignedStudents];
+    bookedSessions.forEach((b) => {
+      const studentName = b.studentName || 'Mike Kariuki';
+      if (!list.some(s => s.name?.toLowerCase() === studentName.toLowerCase())) {
+        list.push({
+          id: b.studentId || `st_${b.id}`,
+          name: studentName,
+          grade: b.focusSubject?.includes('PP2') ? 'PP2 Early Learning' : 'Grade 4 (CBC)',
+          parentName: b.parentName || 'Steve (Parent)',
+          status: 'Confirmed 1-on-1 Student',
+          avatar: 'https://images.unsplash.com/photo-1543332164-6e82f355badc?w=120'
+        });
+      }
+    });
+    return list;
+  }, [assignedStudents, bookedSessions]);
   const [podGroups, setPodGroups] = useState(() => planningAuthorityStore.getTeacherPods(currentUser?.id || ''));
   const [selectedPodId, setSelectedPodId] = useState('pod_alpha');
 
@@ -289,11 +307,11 @@ export default function TutorDashboard({ onNavigateToCreator }) {
           }}
         >
           {[
-            { id: 'schedule_manager', label: `📅 Weekly Schedule & Availability (${scheduleSlots.length} Slots)` },
+            { id: 'schedule_manager', label: `📅 Confirmed Bookings & Schedule (${bookedSessions.length} Booked)` },
             { id: 'pods', label: `🏘️ My Estate Pods (${podGroups.length})` },
             { id: 'marking', label: `📝 CBA Marking & Rubrics (${homeworkList.filter(h => h.status === 'submitted').length} Pending)` },
             { id: 'schedule_live', label: '🎥 Host Live Class' },
-            { id: 'students', label: `👤 All Students (${assignedStudents.length})` },
+            { id: 'students', label: `👤 My Students (${allStudents.length})` },
             { id: 'earnings', label: `💰 Wallet & Payout (KES ${balanceKes.toLocaleString()})` }
           ].map(tab => (
             <option key={tab.id} value={tab.id}>{tab.label}</option>
@@ -304,11 +322,11 @@ export default function TutorDashboard({ onNavigateToCreator }) {
       {/* Desktop Pills View */}
       <div className="desktop-nav-pills glass-panel" style={{ padding: '10px 14px', marginBottom: '24px', gap: '8px', flexWrap: 'wrap' }}>
         {[
-          { id: 'schedule_manager', label: `📅 Weekly Schedule & Availability (${scheduleSlots.length} Slots)` },
+          { id: 'schedule_manager', label: `📅 Confirmed Bookings & Schedule (${bookedSessions.length} Booked)` },
           { id: 'pods', label: `🏘️ My Estate Pods (${podGroups.length})` },
           { id: 'marking', label: `📝 CBA Marking & Rubrics (${homeworkList.filter(h => h.status === 'submitted').length} Pending)` },
           { id: 'schedule_live', label: '🎥 Host Live Class' },
-          { id: 'students', label: `👤 All Students (${assignedStudents.length})` },
+          { id: 'students', label: `👤 My Students (${allStudents.length})` },
           { id: 'earnings', label: `💰 Wallet & Payout (KES ${balanceKes.toLocaleString()})` }
         ].map(tab => (
           <button
@@ -829,7 +847,7 @@ export default function TutorDashboard({ onNavigateToCreator }) {
       {/* ================= SECTION 5: ALL STUDENTS DIRECTORY ================= */}
       {activeTab === 'students' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
-          {assignedStudents.map((st) => (
+          {allStudents.map((st) => (
             <div key={st.id} className="glass-panel" style={{ padding: '20px', borderRadius: '18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <div style={{ fontWeight: 800, fontSize: '1rem', color: '#FFFFFF' }}>{st.name}</div>
